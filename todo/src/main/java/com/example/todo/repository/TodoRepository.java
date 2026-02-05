@@ -7,6 +7,8 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Repository
 public interface TodoRepository extends JpaRepository<Todo, Long> {
@@ -16,6 +18,8 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
     List<Todo> findByTitleContaining(String keyword);
 
     List<Todo> findByTitleContainingIgnoreCase(String keyword, org.springframework.data.domain.Sort sort);
+
+    Page<Todo> findByTitleContainingIgnoreCase(String keyword, Pageable pageable);
 
     List<Todo> findByDueDateLessThanEqual(LocalDate date);
 

@@ -34,6 +34,8 @@ public class TodoController {
     public String list(@RequestParam(required = false) String keyword,
                        @RequestParam(required = false, defaultValue = "createdAt") String sort,
                        @RequestParam(required = false, defaultValue = "desc") String order,
+                       @RequestParam(required = false, defaultValue = "0") int page,
+                       @RequestParam(required = false, defaultValue = "10") int size,
                        Model model) {
         String sortColumn = normalizeSort(sort);
         String sortOrder = normalizeOrder(order);
@@ -42,13 +44,19 @@ public class TodoController {
                 sortOrder.equals("asc") ? org.springframework.data.domain.Sort.Direction.ASC
                         : org.springframework.data.domain.Sort.Direction.DESC;
 
-        org.springframework.data.domain.Sort sortSpec =
-                org.springframework.data.domain.Sort.by(direction, sortColumn);
+        org.springframework.data.domain.Sort sortSpec = org.springframework.data.domain.Sort.by(direction, sortColumn);
+        org.springframework.data.domain.Pageable pageable =
+                org.springframework.data.domain.PageRequest.of(page, size, sortSpec);
 
-        model.addAttribute("todos", todoService.findAll(keyword, sortSpec));
+        org.springframework.data.domain.Page<com.example.todo.entity.Todo> todoPage =
+                todoService.findPage(keyword, pageable);
+
+        model.addAttribute("todoPage", todoPage);
+        model.addAttribute("todos", todoPage.getContent());
         model.addAttribute("keyword", keyword);
         model.addAttribute("sort", sortColumn);
         model.addAttribute("order", sortOrder);
+        model.addAttribute("size", size);
         return "todo/list";
     }
 

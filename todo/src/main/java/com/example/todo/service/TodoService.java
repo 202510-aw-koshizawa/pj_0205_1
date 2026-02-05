@@ -38,6 +38,13 @@ public class TodoService {
         return todoRepository.findAll(sort);
     }
 
+    public org.springframework.data.domain.Page<Todo> findPage(String keyword, org.springframework.data.domain.Pageable pageable) {
+        if (keyword != null && !keyword.isBlank()) {
+            return todoRepository.findByTitleContainingIgnoreCase(keyword, pageable);
+        }
+        return todoRepository.findAll(pageable);
+    }
+
     public List<Todo> searchByTitle(String keyword) {
         return todoRepository.findByTitleContainingIgnoreCase(
                 keyword, Sort.by(Sort.Direction.DESC, "createdAt"));
