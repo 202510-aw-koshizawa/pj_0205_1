@@ -10,35 +10,39 @@
     <div class="container mt-4">
         <h1>ToDo編集</h1>
 
-        <div th:if="${error}" class="alert alert-danger" role="alert"
-             th:text="${error}">エラー</div>
-
-        <form th:action="@{/todos/{id}/update(id=${todo.id})}" method="post">
-            <input type="hidden" name="id" th:value="${todo.id}">
+        <form th:action="@{/todos/{id}/update(id=${todoId})}" th:object="${todoForm}" method="post">
+            <input type="hidden" name="id" th:value="${todoId}">
 
             <div class="mb-3">
                 <label for="title" class="form-label">タイトル <span class="text-danger">*</span></label>
                 <input type="text" class="form-control"
-                       id="title" name="title" required
-                       th:value="${todo.title}">
+                       id="title" th:field="*{title}" required
+                       th:classappend="${#fields.hasErrors('title')} ? 'is-invalid'">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('title')}"
+                     th:errors="*{title}"></div>
             </div>
 
             <div class="mb-3">
                 <label for="description" class="form-label">説明</label>
                 <textarea class="form-control" id="description"
-                          name="description" rows="3"
-                          th:text="${todo.description}"></textarea>
+                          th:field="*{description}" rows="3"
+                          th:classappend="${#fields.hasErrors('description')} ? 'is-invalid'"></textarea>
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('description')}"
+                     th:errors="*{description}"></div>
             </div>
 
             <div class="mb-3">
                 <label for="priority" class="form-label">優先度</label>
-                <select class="form-select" id="priority" name="priority">
-                    <option value="1" th:selected="${todo.priority == 1}">1（最高）</option>
-                    <option value="2" th:selected="${todo.priority == 2}">2（高）</option>
-                    <option value="3" th:selected="${todo.priority == 3}">3（普通）</option>
-                    <option value="4" th:selected="${todo.priority == 4}">4（低）</option>
-                    <option value="5" th:selected="${todo.priority == 5}">5（最低）</option>
+                <select class="form-select" id="priority" th:field="*{priority}"
+                        th:classappend="${#fields.hasErrors('priority')} ? 'is-invalid'">
+                    <option value="1">1（最高）</option>
+                    <option value="2">2（高）</option>
+                    <option value="3">3（普通）</option>
+                    <option value="4">4（低）</option>
+                    <option value="5">5（最低）</option>
                 </select>
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('priority')}"
+                     th:errors="*{priority}"></div>
             </div>
 
             <div class="d-flex gap-2">

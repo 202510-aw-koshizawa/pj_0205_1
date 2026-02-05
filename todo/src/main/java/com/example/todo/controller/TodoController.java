@@ -3,14 +3,15 @@ package com.example.todo.controller;
 import com.example.todo.dto.TodoForm;
 import com.example.todo.entity.Todo;
 import com.example.todo.service.TodoService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
@@ -40,7 +41,7 @@ public class TodoController {
      */
     @GetMapping("/new")
     public String showCreateForm(Model model) {
-        // 空のToDoオブジェクトをフォーム用にセット
+        model.addAttribute("todoForm", new TodoForm("", "", 3));
         return "todo/form";
     }
 
@@ -49,17 +50,11 @@ public class TodoController {
      * @RequestParam でフォームの各フィールドを個別に受け取る
      */
     @PostMapping("/confirm")
-    public String confirm(
-            @RequestParam("title") String title,
-            @RequestParam(value = "description", required = false) String description,
-            @RequestParam(value = "priority", defaultValue = "3") Integer priority,
-            Model model) {
-
-        // 受け取ったデータをModelに格納
-        model.addAttribute("title", title);
-        model.addAttribute("description", description);
-        model.addAttribute("priority", priority);
-
+    public String confirm(@Valid TodoForm todoForm, BindingResult result, Model model) {
+        if (result.hasErrors()) {
+            return "todo/form";
+        }
+        model.addAttribute("todoForm", todoForm);
         return "todo/confirm";
     }
 
@@ -79,7 +74,10 @@ public class TodoController {
      */
     @GetMapping("/{id}/edit")
     public String edit(@PathVariable Long id, Model model) {
-        model.addAttribute("todo", todoService.findById(id));
+        Todo todo = todoService.findById(id);
+        TodoForm form = new TodoForm(todo.getTitle(), todo.getDescription(), todo.getPriority());
+        model.addAttribute("todoForm", form);
+        model.addAttribute("todoId", todo.getId());
         return "todo/edit";
     }
 
@@ -89,23 +87,17 @@ public class TodoController {
     @PostMapping("/{id}/update")
     public String update(
             @PathVariable Long id,
-            @RequestParam("title") String title,
-            @RequestParam(value = "description", required = false) String description,
-            @RequestParam(value = "priority", defaultValue = "3") Integer priority,
+            @Valid TodoForm todoForm,
+            BindingResult result,
             Model model,
             RedirectAttributes redirectAttributes) {
 
-        if (title == null || title.isBlank()) {
-            model.addAttribute("error", "タイトルは必須です");
-            Todo todo = todoService.findById(id);
-            todo.setTitle(title);
-            todo.setDescription(description);
-            todo.setPriority(priority);
-            model.addAttribute("todo", todo);
+        if (result.hasErrors()) {
+            model.addAttribute("todoId", id);
             return "todo/edit";
         }
 
-        todoService.update(id, title, description, priority);
+        todoService.update(id, todoForm.getTitle(), todoForm.getDescription(), todoForm.getPriority());
         redirectAttributes.addFlashAttribute("message", "更新が完了しました");
         redirectAttributes.addFlashAttribute("messageType", "success");
         return "redirect:/todos";
@@ -124,14 +116,8 @@ public class TodoController {
      * 登録処理を実行し完了画面へ
      */
     @PostMapping("/complete")
-    public String complete(
-            @RequestParam("title") String title,
-            @RequestParam(value = "description", required = false) String description,
-            @RequestParam(value = "priority", defaultValue = "3") Integer priority,
-            RedirectAttributes redirectAttributes) {
-
-        TodoForm form = new TodoForm(title, description, priority);
-        todoService.create(form);
+    public String complete(TodoForm todoForm, RedirectAttributes redirectAttributes) {
+        todoService.create(todoForm);
 
         redirectAttributes.addFlashAttribute("message", "登録が完了しました");
 

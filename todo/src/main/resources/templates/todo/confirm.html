@@ -14,21 +14,21 @@
             <div class="card-body">
                 <dl class="row">
                     <dt class="col-sm-3">タイトル</dt>
-                    <dd class="col-sm-9" th:text="${title}">サンプル</dd>
+                    <dd class="col-sm-9" th:text="${todoForm.title}">サンプル</dd>
 
                     <dt class="col-sm-3">説明</dt>
-                    <dd class="col-sm-9" th:text="${description} ?: '（なし）'">説明文</dd>
+                    <dd class="col-sm-9" th:text="${todoForm.description} ?: '（なし）'">説明文</dd>
 
                     <dt class="col-sm-3">優先度</dt>
-                    <dd class="col-sm-9" th:text="${priority}">3</dd>
+                    <dd class="col-sm-9" th:text="${todoForm.priority}">3</dd>
                 </dl>
             </div>
         </div>
 
-        <form th:action="@{/todos/complete}" method="post">
-            <input type="hidden" name="title" th:value="${title}">
-            <input type="hidden" name="description" th:value="${description}">
-            <input type="hidden" name="priority" th:value="${priority}">
+        <form th:action="@{/todos/complete}" th:object="${todoForm}" method="post">
+            <input type="hidden" th:field="*{title}">
+            <input type="hidden" th:field="*{description}">
+            <input type="hidden" th:field="*{priority}">
 
             <div class="d-flex gap-2">
                 <button type="button" class="btn btn-secondary"
