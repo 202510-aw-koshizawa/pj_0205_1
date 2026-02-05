@@ -23,8 +23,9 @@ public class TodoService {
     private final TodoRepository todoRepository;
     private final CategoryService categoryService;
     private final UserRepository userRepository;
+    private final AuditService auditService;
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Todo create(TodoForm form, User user) {
         Todo todo = new Todo();
         todo.setTitle(form.getTitle());
@@ -33,10 +34,12 @@ public class TodoService {
         todo.setDueDate(form.getDueDate());
         todo.setCategory(categoryService.findById(form.getCategoryId()));
         todo.setUser(user);
-        return todoRepository.save(todo);
+        Todo saved = todoRepository.save(todo);
+        auditService.log("CREATE", saved.getId(), user.getUsername());
+        return saved;
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Todo createFromApi(com.example.todo.dto.ApiTodoRequest req, User user) {
         Todo todo = new Todo();
         todo.setTitle(req.getTitle());
@@ -48,13 +51,17 @@ public class TodoService {
         if (req.getCompleted() != null) {
             todo.setCompleted(req.getCompleted());
         }
-        return todoRepository.save(todo);
+        Todo saved = todoRepository.save(todo);
+        auditService.log("CREATE", saved.getId(), user.getUsername());
+        return saved;
     }
 
+    @Transactional(readOnly = true)
     public List<Todo> findAll() {
         return todoRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 
+    @Transactional(readOnly = true)
     public List<Todo> findAll(String keyword, Sort sort) {
         if (keyword != null && !keyword.isBlank()) {
             return todoRepository.findByTitleContainingIgnoreCase(keyword, sort);
@@ -62,6 +69,7 @@ public class TodoService {
         return todoRepository.findAll(sort);
     }
 
+    @Transactional(readOnly = true)
     public List<Todo> findAll(User user, String keyword, Long categoryId, Sort sort, boolean isAdmin) {
         boolean hasKeyword = keyword != null && !keyword.isBlank();
         boolean hasCategory = categoryId != null;
@@ -89,6 +97,7 @@ public class TodoService {
         return todoRepository.findByUser(user, sort);
     }
 
+    @Transactional(readOnly = true)
     public org.springframework.data.domain.Page<Todo> findPage(User user, String keyword, Long categoryId, org.springframework.data.domain.Pageable pageable, boolean isAdmin) {
         boolean hasKeyword = keyword != null && !keyword.isBlank();
         boolean hasCategory = categoryId != null;
@@ -116,7 +125,7 @@ public class TodoService {
         return todoRepository.findByUser(user, pageable);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public int createSamples(int count, User user) {
         int created = 0;
         com.example.todo.enums.Priority[] values = com.example.todo.enums.Priority.values();
@@ -135,26 +144,31 @@ public class TodoService {
                 todo.setCategory(categories.get(i % categories.size()));
             }
             todo.setUser(user);
-            todoRepository.save(todo);
+            Todo saved = todoRepository.save(todo);
+            auditService.log("CREATE_SAMPLE", saved.getId(), user.getUsername());
             created++;
         }
         return created;
     }
 
+    @Transactional(readOnly = true)
     public List<Todo> searchByTitle(String keyword) {
         return todoRepository.findByTitleContainingIgnoreCase(
                 keyword, Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 
+    @Transactional(readOnly = true)
     public Todo findById(Long id) {
         return todoRepository.findById(id)
                 .orElseThrow(() -> new TodoNotFoundException(id));
     }
 
+    @Transactional(readOnly = true)
     public Todo findByIdForUser(Long id, User user) {
         return findByIdWithAccess(id, user, false);
     }
 
+    @Transactional(readOnly = true)
     public Todo findByIdWithAccess(Long id, User user, boolean isAdmin) {
         Todo todo = findById(id);
         if (!isAdmin) {
@@ -165,13 +179,14 @@ public class TodoService {
         return todo;
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void delete(Long id, User user, boolean isAdmin) {
         Todo todo = findByIdWithAccess(id, user, isAdmin);
         todoRepository.deleteById(todo.getId());
+        auditService.log("DELETE", todo.getId(), user.getUsername());
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Todo update(Long id, String title, String description, com.example.todo.enums.Priority priority, Long categoryId, java.time.LocalDate dueDate, User user, boolean isAdmin) {
         Todo todo = findByIdWithAccess(id, user, isAdmin);
         todo.setTitle(title);
@@ -179,10 +194,12 @@ public class TodoService {
         todo.setPriority(priority);
         todo.setDueDate(dueDate);
         todo.setCategory(categoryService.findById(categoryId));
-        return todoRepository.save(todo);
+        Todo saved = todoRepository.save(todo);
+        auditService.log("UPDATE", saved.getId(), user.getUsername());
+        return saved;
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Todo updateFromApi(Long id, com.example.todo.dto.ApiTodoRequest req, User user, boolean isAdmin) {
         Todo todo = findByIdWithAccess(id, user, isAdmin);
         todo.setTitle(req.getTitle());
@@ -193,16 +210,19 @@ public class TodoService {
         if (req.getCompleted() != null) {
             todo.setCompleted(req.getCompleted());
         }
-        return todoRepository.save(todo);
+        Todo saved = todoRepository.save(todo);
+        auditService.log("UPDATE", saved.getId(), user.getUsername());
+        return saved;
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(List<Long> ids, User user, boolean isAdmin) {
         if (ids == null || ids.isEmpty()) {
             return 0;
         }
         if (isAdmin) {
             todoRepository.deleteByIdIn(ids);
+            ids.forEach(id -> auditService.log("DELETE", id, user.getUsername()));
             return ids.size();
         }
         List<Long> ownIds = ids.stream()
@@ -219,16 +239,20 @@ public class TodoService {
             return 0;
         }
         todoRepository.deleteByIdIn(ownIds);
+        ownIds.forEach(id -> auditService.log("DELETE", id, user.getUsername()));
         return ownIds.size();
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Todo toggleCompleted(Long id, User user, boolean isAdmin) {
         Todo todo = findByIdWithAccess(id, user, isAdmin);
         todo.setCompleted(!todo.getCompleted());
-        return todoRepository.save(todo);
+        Todo saved = todoRepository.save(todo);
+        auditService.log("TOGGLE", saved.getId(), user.getUsername());
+        return saved;
     }
 
+    @Transactional(readOnly = true)
     public User loadUser(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException("E401", "ユーザーが見つかりません: " + username));
