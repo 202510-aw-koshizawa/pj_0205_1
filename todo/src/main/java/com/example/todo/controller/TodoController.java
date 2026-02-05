@@ -29,7 +29,7 @@ public class TodoController {
      */
     @GetMapping
     public String list(Model model) {
-        // ToDoリストをModelに追加（後でServiceから取得）
+        model.addAttribute("todos", todoService.findAll());
         return "todo/list";
     }
 

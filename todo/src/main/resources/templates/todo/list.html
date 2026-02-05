@@ -23,31 +23,53 @@
             新規作成
         </a>
 
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>タイトル</th>
-                    <th>ステータス</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="todo : ${todos}">
-                    <td th:text="${todo.id}">1</td>
-                    <td th:text="${todo.title}">サンプルタスク</td>
-                    <td th:text="${todo.completed ? '完了' : '未完了'}">未完了</td>
-                    <td>
-                        <a th:href="@{/todos/{id}(id=${todo.id})}"
-                           class="btn btn-info btn-sm">詳細</a>
-                        <a th:href="@{/todos/{id}/edit(id=${todo.id})}"
-                           class="btn btn-warning btn-sm">編集</a>
-                        <a th:href="@{/todos/{id}/delete(id=${todo.id})}"
-                           class="btn btn-danger btn-sm">削除</a>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <div th:if="${!#lists.isEmpty(todos)}">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>タイトル</th>
+                        <th>期限日</th>
+                        <th>優先度</th>
+                        <th>状態</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="todo : ${todos}">
+                        <td th:text="${todo.title}">タイトル</td>
+                        <td th:text="${#temporals.format(todo.dueDate, 'yyyy/MM/dd')}"
+                            th:classappend="${todo.dueDate != null && todo.dueDate.isBefore(#temporals.createToday())} ? 'text-danger'">
+                            2024/01/01
+                        </td>
+                        <td>
+                            <span th:each="i : ${#numbers.sequence(1, todo.priority)}">★</span>
+                        </td>
+                        <td>
+                            <span th:if="${todo.completed}" class="badge bg-success">完了</span>
+                            <span th:unless="${todo.completed}" class="badge bg-secondary">未完了</span>
+                        </td>
+                        <td>
+                            <a th:href="@{/todos/{id}(id=${todo.id})}" class="btn btn-sm btn-info">詳細</a>
+                            <a th:href="@{/todos/{id}/edit(id=${todo.id})}" class="btn btn-sm btn-warning">編集</a>
+                            <a th:href="@{/todos/{id}/delete(id=${todo.id})}" class="btn btn-sm btn-danger">削除</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div th:unless="${!#lists.isEmpty(todos)}" class="text-center py-5">
+            <div class="mb-4">
+                <span class="material-icons" style="font-size: 4rem; color: #9ca3af;">
+                    inbox
+                </span>
+            </div>
+            <h4 class="text-muted">ToDoがまだ登録されていません</h4>
+            <p class="text-muted mb-4">最初のToDoを作成しましょう</p>
+            <a th:href="@{/todos/new}" class="btn btn-primary">
+                <span class="material-icons">add</span> 新規作成
+            </a>
+        </div>
     </div>
 
     <footer class="bg-light text-center py-3 mt-5">
