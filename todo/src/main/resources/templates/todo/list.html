@@ -40,6 +40,7 @@
                 新規作成
             </a>
             <form th:action="@{/todos/sample}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                 <button type="submit" class="btn btn-outline-primary">
                     サンプル生成
                 </button>
@@ -49,6 +50,7 @@
                 CSVダウンロード
             </a>
             <form id="bulkDeleteForm" th:action="@{/todos/bulk-delete}" method="post" class="ms-auto">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                 <button type="submit" class="btn btn-danger"
                         onclick="return confirm('選択した項目を削除しますか？');"
                         id="bulkDeleteBtn" disabled>
@@ -171,6 +173,7 @@
                         </td>
                         <td class="d-flex gap-2">
                             <form th:action="@{/todos/{id}/toggle(id=${todo.id})}" method="post" class="d-inline">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                 <button type="submit"
                                         th:class="${todo.completed} ? 'btn btn-sm btn-outline-secondary' : 'btn btn-sm btn-success'">
                                     <span th:if="${todo.completed}">未完了に戻す</span>
@@ -182,6 +185,7 @@
                             <form th:action="@{/todos/{id}/delete(id=${todo.id})}"
                                   method="post"
                                   onsubmit="return confirm('本当に削除しますか？')">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                 <button type="submit" class="btn btn-sm btn-danger">削除</button>
                             </form>
                         </td>
