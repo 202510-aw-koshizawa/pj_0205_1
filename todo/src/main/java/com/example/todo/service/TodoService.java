@@ -35,6 +35,21 @@ public class TodoService {
         return todoRepository.save(todo);
     }
 
+    @Transactional
+    public Todo createFromApi(com.example.todo.dto.ApiTodoRequest req, User user) {
+        Todo todo = new Todo();
+        todo.setTitle(req.getTitle());
+        todo.setDescription(req.getDescription());
+        todo.setPriority(req.getPriority());
+        todo.setDueDate(req.getDueDate());
+        todo.setCategory(categoryService.findById(req.getCategoryId()));
+        todo.setUser(user);
+        if (req.getCompleted() != null) {
+            todo.setCompleted(req.getCompleted());
+        }
+        return todoRepository.save(todo);
+    }
+
     public List<Todo> findAll() {
         return todoRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
     }
@@ -163,6 +178,20 @@ public class TodoService {
         todo.setPriority(priority);
         todo.setDueDate(dueDate);
         todo.setCategory(categoryService.findById(categoryId));
+        return todoRepository.save(todo);
+    }
+
+    @Transactional
+    public Todo updateFromApi(Long id, com.example.todo.dto.ApiTodoRequest req, User user, boolean isAdmin) {
+        Todo todo = findByIdWithAccess(id, user, isAdmin);
+        todo.setTitle(req.getTitle());
+        todo.setDescription(req.getDescription());
+        todo.setPriority(req.getPriority());
+        todo.setDueDate(req.getDueDate());
+        todo.setCategory(categoryService.findById(req.getCategoryId()));
+        if (req.getCompleted() != null) {
+            todo.setCompleted(req.getCompleted());
+        }
         return todoRepository.save(todo);
     }
 
