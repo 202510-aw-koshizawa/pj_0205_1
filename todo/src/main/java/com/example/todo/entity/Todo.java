@@ -45,6 +45,9 @@ public class Todo {
     @Column(nullable = false, length = 10)
     private Priority priority = Priority.MEDIUM;
 
+    @Column(name = "priority_rank")
+    private Integer priorityRank;
+
     @ManyToOne
     @JoinColumn(name = "category_id")
     private Category category;
@@ -66,11 +69,30 @@ public class Todo {
         if (updatedAt == null) {
             updatedAt = createdAt;
         }
+        if (priorityRank == null && priority != null) {
+            priorityRank = toRank(priority);
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+        if (priorityRank == null && priority != null) {
+            priorityRank = toRank(priority);
+        }
+    }
+
+    public void setPriority(Priority priority) {
+        this.priority = priority;
+        this.priorityRank = priority != null ? toRank(priority) : null;
+    }
+
+    private int toRank(Priority priority) {
+        return switch (priority) {
+            case HIGH -> 1;
+            case MEDIUM -> 2;
+            case LOW -> 3;
+        };
     }
 
     public boolean isExpired() {

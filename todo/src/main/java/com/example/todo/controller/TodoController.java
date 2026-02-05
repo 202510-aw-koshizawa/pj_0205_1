@@ -49,11 +49,9 @@ public class TodoController {
 
         org.springframework.data.domain.Sort sortSpec;
         if ("priority".equals(sortColumn)) {
-            String caseExpr = "case when priority = 'HIGH' then 1 when priority = 'MEDIUM' then 2 when priority = 'LOW' then 3 else 4 end";
-            sortSpec = org.springframework.data.jpa.domain.JpaSort.unsafe(direction, caseExpr);
-        } else {
-            sortSpec = org.springframework.data.domain.Sort.by(direction, sortColumn);
+            sortColumn = "priorityRank";
         }
+        sortSpec = org.springframework.data.domain.Sort.by(direction, sortColumn);
         org.springframework.data.domain.Pageable pageable =
                 org.springframework.data.domain.PageRequest.of(page, size, sortSpec);
 
