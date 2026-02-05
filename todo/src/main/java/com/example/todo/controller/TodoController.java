@@ -5,6 +5,9 @@ import com.example.todo.entity.Todo;
 import com.example.todo.entity.User;
 import com.example.todo.service.CategoryService;
 import com.example.todo.service.TodoService;
+import com.example.todo.service.TodoAttachmentService;
+import com.example.todo.service.FileStorageService;
+import com.example.todo.entity.TodoAttachment;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -26,6 +29,13 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
+import java.nio.file.Path;
 
 /**
  * ToDoアプリのControllerクラス
@@ -38,6 +48,8 @@ public class TodoController {
 
     private final TodoService todoService;
     private final CategoryService categoryService;
+    private final TodoAttachmentService attachmentService;
+    private final FileStorageService fileStorageService;
 
     /**
      * 一覧画面を表示
@@ -156,8 +168,104 @@ public class TodoController {
         User user = todoService.loadUser(userDetails.getUsername());
         boolean isAdmin = hasRole(userDetails, "ROLE_ADMIN");
         Todo todo = todoService.findByIdWithAccess(id, user, isAdmin);
+        model.addAttribute("attachments", attachmentService.findByTodo(todo));
         model.addAttribute("todo", todo);
         return "todo/detail";
+    }
+
+    /**
+     * 添付フォーム表示
+     */
+    @GetMapping("/{id}/attach")
+    public String showAttachForm(@PathVariable Long id,
+                                 @AuthenticationPrincipal UserDetails userDetails,
+                                 Model model) {
+        User user = todoService.loadUser(userDetails.getUsername());
+        boolean isAdmin = hasRole(userDetails, "ROLE_ADMIN");
+        Todo todo = todoService.findByIdWithAccess(id, user, isAdmin);
+        model.addAttribute("todo", todo);
+        model.addAttribute("attachments", attachmentService.findByTodo(todo));
+        return "todo/attach";
+    }
+
+    /**
+     * 添付アップロード
+     */
+    @PostMapping("/{id}/attach")
+    public String uploadFile(@PathVariable Long id,
+                             @RequestParam("file") MultipartFile file,
+                             @AuthenticationPrincipal UserDetails userDetails,
+                             RedirectAttributes redirectAttributes) {
+        if (file.isEmpty()) {
+            redirectAttributes.addFlashAttribute("message", "ファイルを選択してください");
+            redirectAttributes.addFlashAttribute("messageType", "danger");
+            return "redirect:/todos/" + id + "/attach";
+        }
+        try {
+            User user = todoService.loadUser(userDetails.getUsername());
+            boolean isAdmin = hasRole(userDetails, "ROLE_ADMIN");
+            Todo todo = todoService.findByIdWithAccess(id, user, isAdmin);
+            attachmentService.store(todo, file);
+            redirectAttributes.addFlashAttribute("message", "ファイルをアップロードしました");
+            redirectAttributes.addFlashAttribute("messageType", "success");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("message", "アップロードに失敗しました");
+            redirectAttributes.addFlashAttribute("messageType", "danger");
+        }
+        return "redirect:/todos/" + id;
+    }
+
+    /**
+     * 添付ダウンロード
+     */
+    @GetMapping("/attachments/{attachmentId}/download")
+    public ResponseEntity<Resource> downloadFile(@PathVariable Long attachmentId,
+                                                 @AuthenticationPrincipal UserDetails userDetails) {
+        TodoAttachment attachment = attachmentService.findById(attachmentId);
+        User user = todoService.loadUser(userDetails.getUsername());
+        boolean isAdmin = hasRole(userDetails, "ROLE_ADMIN");
+        todoService.findByIdWithAccess(attachment.getTodo().getId(), user, isAdmin);
+        try {
+            Path filePath = fileStorageService.load(attachment.getStoredFilename());
+            Resource resource = new UrlResource(filePath.toUri());
+            if (!resource.exists()) {
+                throw new RuntimeException("ファイルが見つかりません");
+            }
+            String encodedFilename = URLEncoder.encode(
+                    attachment.getOriginalFilename(), StandardCharsets.UTF_8
+            ).replace("+", "%20");
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(attachment.getContentType()))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename*=UTF-8''" + encodedFilename)
+                    .body(resource);
+        } catch (Exception e) {
+            throw new RuntimeException("ファイルの読み込みに失敗", e);
+        }
+    }
+
+    /**
+     * 添付削除
+     */
+    @PostMapping("/attachments/{attachmentId}/delete")
+    public String deleteFile(@PathVariable Long attachmentId,
+                             @AuthenticationPrincipal UserDetails userDetails,
+                             RedirectAttributes redirectAttributes) {
+        try {
+            TodoAttachment attachment = attachmentService.findById(attachmentId);
+            User user = todoService.loadUser(userDetails.getUsername());
+            boolean isAdmin = hasRole(userDetails, "ROLE_ADMIN");
+            todoService.findByIdWithAccess(attachment.getTodo().getId(), user, isAdmin);
+            Long todoId = attachment.getTodo().getId();
+            attachmentService.delete(attachment);
+            redirectAttributes.addFlashAttribute("message", "ファイルを削除しました");
+            redirectAttributes.addFlashAttribute("messageType", "success");
+            return "redirect:/todos/" + todoId;
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("message", "ファイル削除に失敗しました");
+            redirectAttributes.addFlashAttribute("messageType", "danger");
+            return "redirect:/todos";
+        }
     }
 
     /**
