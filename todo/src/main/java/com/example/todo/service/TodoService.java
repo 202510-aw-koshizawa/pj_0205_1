@@ -31,6 +31,13 @@ public class TodoService {
         return todoRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 
+    public List<Todo> findAll(String keyword, Sort sort) {
+        if (keyword != null && !keyword.isBlank()) {
+            return todoRepository.findByTitleContainingIgnoreCase(keyword, sort);
+        }
+        return todoRepository.findAll(sort);
+    }
+
     public List<Todo> searchByTitle(String keyword) {
         return todoRepository.findByTitleContainingIgnoreCase(
                 keyword, Sort.by(Sort.Direction.DESC, "createdAt"));

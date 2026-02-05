@@ -32,14 +32,43 @@ public class TodoController {
      */
     @GetMapping
     public String list(@RequestParam(required = false) String keyword,
+                       @RequestParam(required = false, defaultValue = "createdAt") String sort,
+                       @RequestParam(required = false, defaultValue = "desc") String order,
                        Model model) {
-        if (keyword != null && !keyword.isBlank()) {
-            model.addAttribute("todos", todoService.searchByTitle(keyword.trim()));
-        } else {
-            model.addAttribute("todos", todoService.findAll());
-        }
+        String sortColumn = normalizeSort(sort);
+        String sortOrder = normalizeOrder(order);
+
+        org.springframework.data.domain.Sort.Direction direction =
+                sortOrder.equals("asc") ? org.springframework.data.domain.Sort.Direction.ASC
+                        : org.springframework.data.domain.Sort.Direction.DESC;
+
+        org.springframework.data.domain.Sort sortSpec =
+                org.springframework.data.domain.Sort.by(direction, sortColumn);
+
+        model.addAttribute("todos", todoService.findAll(keyword, sortSpec));
         model.addAttribute("keyword", keyword);
+        model.addAttribute("sort", sortColumn);
+        model.addAttribute("order", sortOrder);
         return "todo/list";
+    }
+
+    private String normalizeSort(String sort) {
+        if (sort == null) return "createdAt";
+        switch (sort) {
+            case "id":
+            case "title":
+            case "createdAt":
+            case "completed":
+                return sort;
+            default:
+                return "createdAt";
+        }
+    }
+
+    private String normalizeOrder(String order) {
+        if ("asc".equalsIgnoreCase(order)) return "asc";
+        if ("desc".equalsIgnoreCase(order)) return "desc";
+        return "desc";
     }
 
     /**
