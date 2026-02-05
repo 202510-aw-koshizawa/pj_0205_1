@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
@@ -30,8 +31,14 @@ public class TodoController {
      * GET /todos でアクセス
      */
     @GetMapping
-    public String list(Model model) {
-        model.addAttribute("todos", todoService.findAll());
+    public String list(@RequestParam(required = false) String keyword,
+                       Model model) {
+        if (keyword != null && !keyword.isBlank()) {
+            model.addAttribute("todos", todoService.searchByTitle(keyword.trim()));
+        } else {
+            model.addAttribute("todos", todoService.findAll());
+        }
+        model.addAttribute("keyword", keyword);
         return "todo/list";
     }
 

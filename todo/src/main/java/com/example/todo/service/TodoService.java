@@ -31,6 +31,11 @@ public class TodoService {
         return todoRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 
+    public List<Todo> searchByTitle(String keyword) {
+        return todoRepository.findByTitleContainingIgnoreCase(
+                keyword, Sort.by(Sort.Direction.DESC, "createdAt"));
+    }
+
     public Todo findById(Long id) {
         return todoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "ToDoが見つかりません: " + id));

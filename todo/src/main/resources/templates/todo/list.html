@@ -28,6 +28,20 @@
             新規作成
         </a>
 
+        <div class="p-3 mb-3 border rounded bg-light">
+            <form th:action="@{/todos}" method="get" class="d-flex gap-2 align-items-center">
+                <input type="text" name="keyword" class="form-control"
+                       th:value="${keyword}" placeholder="タイトルで検索...">
+                <button type="submit" class="btn btn-primary">検索</button>
+                <a th:href="@{/todos}" class="btn btn-outline-secondary">クリア</a>
+            </form>
+        </div>
+
+        <p th:if="${keyword != null and keyword != ''}">
+            「<span th:text="${keyword}">keyword</span>」の検索結果：
+            <span th:text="${todos.size()}">0</span>件
+        </p>
+
         <div th:if="${!#lists.isEmpty(todos)}">
             <table class="table table-striped">
                 <thead>
@@ -75,7 +89,16 @@
             </table>
         </div>
 
-        <div th:unless="${!#lists.isEmpty(todos)}" class="text-center py-5">
+        <div th:if="${#lists.isEmpty(todos) and keyword != null and keyword != ''}"
+             class="text-center py-4 border rounded bg-light">
+            <p class="text-muted mb-2">
+                「<span th:text="${keyword}">keyword</span>」に一致するToDoはありません。
+            </p>
+            <a th:href="@{/todos}" class="btn btn-outline-secondary">検索をクリア</a>
+        </div>
+
+        <div th:unless="${!#lists.isEmpty(todos) or (keyword != null and keyword != '')}"
+             class="text-center py-5">
             <div class="mb-4">
                 <span class="material-icons" style="font-size: 4rem; color: #9ca3af;">
                     inbox

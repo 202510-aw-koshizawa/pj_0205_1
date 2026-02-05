@@ -15,6 +15,8 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
 
     List<Todo> findByTitleContaining(String keyword);
 
+    List<Todo> findByTitleContainingIgnoreCase(String keyword, org.springframework.data.domain.Sort sort);
+
     List<Todo> findByDueDateLessThanEqual(LocalDate date);
 
     List<Todo> findAllByOrderByPriorityDesc();
