@@ -16,8 +16,13 @@
     <div class="container mt-4">
         <h1>ToDo一覧</h1>
 
-        <div th:if="${message}" class="alert alert-success" role="alert"
-             th:text="${message}">登録が完了しました</div>
+        <div th:if="${message}"
+             th:classappend="'alert alert-' + ${messageType ?: 'info'}"
+             class="alert alert-dismissible fade show"
+             role="alert">
+            <span th:text="${message}">メッセージ</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
 
         <a th:href="@{/todos/new}" class="btn btn-success mb-3">
             新規作成
@@ -48,10 +53,14 @@
                             <span th:if="${todo.completed}" class="badge bg-success">完了</span>
                             <span th:unless="${todo.completed}" class="badge bg-secondary">未完了</span>
                         </td>
-                        <td>
+                        <td class="d-flex gap-2">
                             <a th:href="@{/todos/{id}(id=${todo.id})}" class="btn btn-sm btn-info">詳細</a>
                             <a th:href="@{/todos/{id}/edit(id=${todo.id})}" class="btn btn-sm btn-warning">編集</a>
-                            <a th:href="@{/todos/{id}/delete(id=${todo.id})}" class="btn btn-sm btn-danger">削除</a>
+                            <form th:action="@{/todos/{id}/delete(id=${todo.id})}"
+                                  method="post"
+                                  onsubmit="return confirm('本当に削除しますか？')">
+                                <button type="submit" class="btn btn-sm btn-danger">削除</button>
+                            </form>
                         </td>
                     </tr>
                 </tbody>
@@ -71,6 +80,16 @@
             </a>
         </div>
     </div>
+
+    <script th:if="${message}">
+        setTimeout(function() {
+            const alert = document.querySelector('.alert');
+            if (alert) {
+                alert.classList.remove('show');
+                setTimeout(() => alert.remove(), 150);
+            }
+        }, 3000);
+    </script>
 
     <footer class="bg-light text-center py-3 mt-5">
         <p>&copy; 2024 ToDoアプリ</p>

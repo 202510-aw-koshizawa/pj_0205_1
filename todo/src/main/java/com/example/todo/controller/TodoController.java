@@ -90,4 +90,20 @@ public class TodoController {
 
         return "redirect:/todos";
     }
+
+    /**
+     * 削除処理
+     */
+    @PostMapping("/{id}/delete")
+    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            todoService.delete(id);
+            redirectAttributes.addFlashAttribute("message", "ToDoを削除しました");
+            redirectAttributes.addFlashAttribute("messageType", "success");
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("message", "削除に失敗しました");
+            redirectAttributes.addFlashAttribute("messageType", "danger");
+        }
+        return "redirect:/todos";
+    }
 }

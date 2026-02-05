@@ -28,4 +28,12 @@ public class TodoService {
     public List<Todo> findAll() {
         return todoRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
     }
+
+    @Transactional
+    public void delete(Long id) {
+        if (!todoRepository.existsById(id)) {
+            throw new IllegalArgumentException("指定されたToDoが見つかりません: " + id);
+        }
+        todoRepository.deleteById(id);
+    }
 }
