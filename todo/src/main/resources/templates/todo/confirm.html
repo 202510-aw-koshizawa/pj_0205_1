@@ -20,7 +20,7 @@
                     <dd class="col-sm-9" th:text="${todoForm.description} ?: '（なし）'">説明文</dd>
 
                     <dt class="col-sm-3">優先度</dt>
-                    <dd class="col-sm-9" th:text="${todoForm.priority}">3</dd>
+                    <dd class="col-sm-9" th:text="${todoForm.priority.displayName}">中</dd>
                 </dl>
             </div>
         </div>

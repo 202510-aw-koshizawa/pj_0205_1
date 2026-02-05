@@ -67,6 +67,7 @@ public class TodoController {
             case "title":
             case "createdAt":
             case "completed":
+            case "priority":
                 return sort;
             default:
                 return "createdAt";
@@ -85,7 +86,7 @@ public class TodoController {
      */
     @GetMapping("/new")
     public String showCreateForm(Model model) {
-        model.addAttribute("todoForm", new TodoForm("", "", 3));
+        model.addAttribute("todoForm", new TodoForm("", "", com.example.todo.enums.Priority.MEDIUM));
         return "todo/form";
     }
 
@@ -165,6 +166,17 @@ public class TodoController {
 
         redirectAttributes.addFlashAttribute("message", "登録が完了しました");
 
+        return "redirect:/todos";
+    }
+
+    /**
+     * サンプルデータを生成
+     */
+    @PostMapping("/sample")
+    public String createSamples(RedirectAttributes redirectAttributes) {
+        int created = todoService.createSamples(25);
+        redirectAttributes.addFlashAttribute("message", "サンプルを" + created + "件作成しました");
+        redirectAttributes.addFlashAttribute("messageType", "success");
         return "redirect:/todos";
     }
 

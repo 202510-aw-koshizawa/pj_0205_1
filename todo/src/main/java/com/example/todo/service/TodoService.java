@@ -45,6 +45,21 @@ public class TodoService {
         return todoRepository.findAll(pageable);
     }
 
+    @Transactional
+    public int createSamples(int count) {
+        int created = 0;
+        com.example.todo.enums.Priority[] values = com.example.todo.enums.Priority.values();
+        for (int i = 1; i <= count; i++) {
+            Todo todo = new Todo();
+            todo.setTitle("サンプルToDo " + i);
+            todo.setDescription("ページネーション確認用のサンプルデータ " + i);
+            todo.setPriority(values[i % values.length]);
+            todoRepository.save(todo);
+            created++;
+        }
+        return created;
+    }
+
     public List<Todo> searchByTitle(String keyword) {
         return todoRepository.findByTitleContainingIgnoreCase(
                 keyword, Sort.by(Sort.Direction.DESC, "createdAt"));
@@ -64,7 +79,7 @@ public class TodoService {
     }
 
     @Transactional
-    public Todo update(Long id, String title, String description, Integer priority) {
+    public Todo update(Long id, String title, String description, com.example.todo.enums.Priority priority) {
         Todo todo = findById(id);
         todo.setTitle(title);
         todo.setDescription(description);

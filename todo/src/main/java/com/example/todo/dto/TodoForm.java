@@ -1,5 +1,6 @@
 package com.example.todo.dto;
 
+import com.example.todo.enums.Priority;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -19,5 +20,5 @@ public class TodoForm {
     private String description;
 
     @NotNull(message = "優先度を選択してください")
-    private Integer priority;
+    private Priority priority;
 }

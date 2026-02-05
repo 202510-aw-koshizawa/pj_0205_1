@@ -8,6 +8,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Version;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,6 +17,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.example.todo.enums.Priority;
 
 @Entity
 @Table(name = "todos")
@@ -35,8 +38,9 @@ public class Todo {
 
     private LocalDate dueDate;
 
-    @Column(columnDefinition = "INTEGER DEFAULT 1")
-    private Integer priority = 1;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private Priority priority = Priority.MEDIUM;
 
     @Column(columnDefinition = "BOOLEAN DEFAULT FALSE")
     private Boolean completed = false;

@@ -33,11 +33,9 @@
                 <label for="priority" class="form-label">優先度</label>
                 <select class="form-select" id="priority" th:field="*{priority}"
                         th:classappend="${#fields.hasErrors('priority')} ? 'is-invalid'">
-                    <option value="1">1（最高）</option>
-                    <option value="2">2（高）</option>
-                    <option value="3" selected>3（普通）</option>
-                    <option value="4">4（低）</option>
-                    <option value="5">5（最低）</option>
+                    <option th:each="p : ${T(com.example.todo.enums.Priority).values()}"
+                            th:value="${p}"
+                            th:text="${p.displayName}"></option>
                 </select>
                 <div class="invalid-feedback" th:if="${#fields.hasErrors('priority')}"
                      th:errors="*{priority}"></div>
