@@ -16,6 +16,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.List;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.PrintWriter;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.format.DateTimeFormatter;
 
 /**
  * ToDoアプリのControllerクラス
@@ -48,9 +53,7 @@ public class TodoController {
                 sortOrder.equals("asc") ? org.springframework.data.domain.Sort.Direction.ASC
                         : org.springframework.data.domain.Sort.Direction.DESC;
 
-        String sortColumn = "priority".equals(sortKey) ? "priorityRank" : sortKey;
-        org.springframework.data.domain.Sort sortSpec =
-                org.springframework.data.domain.Sort.by(direction, sortColumn);
+        org.springframework.data.domain.Sort sortSpec = buildSort(sortKey, direction);
         org.springframework.data.domain.Pageable pageable =
                 org.springframework.data.domain.PageRequest.of(page, size, sortSpec);
 
@@ -66,6 +69,61 @@ public class TodoController {
         model.addAttribute("size", size);
         model.addAttribute("categories", categoryService.findAll());
         return "todo/list";
+    }
+
+    /**
+     * CSVエクスポート
+     */
+    @GetMapping("/export")
+    public void exportCsv(@RequestParam(required = false) String keyword,
+                          @RequestParam(required = false) Long categoryId,
+                          @RequestParam(required = false, defaultValue = "createdAt") String sort,
+                          @RequestParam(required = false, defaultValue = "desc") String order,
+                          HttpServletResponse response) throws Exception {
+        String sortKey = normalizeSort(sort);
+        String sortOrder = normalizeOrder(order);
+        org.springframework.data.domain.Sort.Direction direction =
+                sortOrder.equals("asc") ? org.springframework.data.domain.Sort.Direction.ASC
+                        : org.springframework.data.domain.Sort.Direction.DESC;
+        org.springframework.data.domain.Sort sortSpec = buildSort(sortKey, direction);
+
+        List<Todo> todos = todoService.findAll(keyword, categoryId, sortSpec);
+
+        String filename = URLEncoder.encode("todo_" +
+                java.time.LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv",
+                StandardCharsets.UTF_8);
+        response.setContentType("text/csv; charset=UTF-8");
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+
+        PrintWriter writer = response.getWriter();
+        writer.print('\ufeff');
+        writer.println("ID,タイトル,説明,優先度,状態,カテゴリ,期限日,作成日");
+
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+        for (Todo todo : todos) {
+            String due = todo.getDueDate() != null ? todo.getDueDate().format(dateFormatter) : "";
+            String created = todo.getCreatedAt() != null ? todo.getCreatedAt().format(dateFormatter) : "";
+            String priority = todo.getPriority() != null ? todo.getPriority().getDisplayName() : "";
+            String status = Boolean.TRUE.equals(todo.getCompleted()) ? "完了" : "未完了";
+            String category = todo.getCategory() != null ? todo.getCategory().getName() : "";
+
+            writer.println(String.format("%d,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"",
+                    todo.getId(),
+                    escapeCsv(todo.getTitle()),
+                    escapeCsv(todo.getDescription()),
+                    escapeCsv(priority),
+                    escapeCsv(status),
+                    escapeCsv(category),
+                    escapeCsv(due),
+                    escapeCsv(created)
+            ));
+        }
+        writer.flush();
+    }
+
+    private String escapeCsv(String value) {
+        if (value == null) return "";
+        return value.replace("\"", "\"\"");
     }
 
     private String normalizeSort(String sort) {
@@ -87,6 +145,12 @@ public class TodoController {
         if ("asc".equalsIgnoreCase(order)) return "asc";
         if ("desc".equalsIgnoreCase(order)) return "desc";
         return "desc";
+    }
+
+    private org.springframework.data.domain.Sort buildSort(String sortKey,
+                                                          org.springframework.data.domain.Sort.Direction direction) {
+        String sortColumn = "priority".equals(sortKey) ? "priorityRank" : sortKey;
+        return org.springframework.data.domain.Sort.by(direction, sortColumn);
     }
 
     /**

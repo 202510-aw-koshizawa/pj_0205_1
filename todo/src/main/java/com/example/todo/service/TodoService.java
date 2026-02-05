@@ -41,6 +41,21 @@ public class TodoService {
         return todoRepository.findAll(sort);
     }
 
+    public List<Todo> findAll(String keyword, Long categoryId, Sort sort) {
+        boolean hasKeyword = keyword != null && !keyword.isBlank();
+        boolean hasCategory = categoryId != null;
+        if (hasKeyword && hasCategory) {
+            return todoRepository.findByTitleContainingIgnoreCaseAndCategoryId(keyword, categoryId, sort);
+        }
+        if (hasKeyword) {
+            return todoRepository.findByTitleContainingIgnoreCase(keyword, sort);
+        }
+        if (hasCategory) {
+            return todoRepository.findByCategoryId(categoryId, sort);
+        }
+        return todoRepository.findAll(sort);
+    }
+
     public org.springframework.data.domain.Page<Todo> findPage(String keyword, Long categoryId, org.springframework.data.domain.Pageable pageable) {
         boolean hasKeyword = keyword != null && !keyword.isBlank();
         boolean hasCategory = categoryId != null;

@@ -44,6 +44,10 @@
                     サンプル生成
                 </button>
             </form>
+            <a th:href="@{/todos/export(keyword=${keyword}, categoryId=${categoryId}, sort=${sort}, order=${order})}"
+               class="btn btn-outline-secondary">
+                CSVダウンロード
+            </a>
             <form id="bulkDeleteForm" th:action="@{/todos/bulk-delete}" method="post" class="ms-auto">
                 <button type="submit" class="btn btn-danger"
                         onclick="return confirm('選択した項目を削除しますか？');"
