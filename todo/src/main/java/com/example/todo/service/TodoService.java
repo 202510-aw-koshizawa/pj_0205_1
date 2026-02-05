@@ -66,8 +66,8 @@ public class TodoService {
             todo.setTitle("サンプルToDo " + i);
             todo.setDescription("ページネーション確認用のサンプルデータ " + i);
             todo.setPriority(values[i % values.length]);
-            java.time.LocalDate baseDate = java.time.LocalDate.now().minusDays(i % 14);
-            todo.setDueDate(baseDate.plusDays((i % 7) - 3));
+            java.time.LocalDate today = java.time.LocalDate.now();
+            todo.setDueDate(today.plusDays((i % 11) - 5));
             java.time.LocalDateTime createdAt = java.time.LocalDateTime.now().minusDays(i % 21);
             todo.setCreatedAt(createdAt);
             todo.setUpdatedAt(createdAt);

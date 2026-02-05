@@ -49,12 +49,8 @@ public class TodoController {
 
         org.springframework.data.domain.Sort sortSpec;
         if ("priority".equals(sortColumn)) {
-            String caseExpr = "case priority when 'HIGH' then 1 when 'MEDIUM' then 2 else 3 end";
-            if (direction == org.springframework.data.domain.Sort.Direction.ASC) {
-                sortSpec = org.springframework.data.jpa.domain.JpaSort.unsafe(caseExpr);
-            } else {
-                sortSpec = org.springframework.data.jpa.domain.JpaSort.unsafe(caseExpr + " desc");
-            }
+            String caseExpr = "case when priority = 'HIGH' then 1 when priority = 'MEDIUM' then 2 when priority = 'LOW' then 3 else 4 end";
+            sortSpec = org.springframework.data.jpa.domain.JpaSort.unsafe(direction, caseExpr);
         } else {
             sortSpec = org.springframework.data.domain.Sort.by(direction, sortColumn);
         }
