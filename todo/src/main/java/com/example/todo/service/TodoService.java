@@ -46,9 +46,21 @@ public class TodoService {
         return todoRepository.findAll(sort);
     }
 
-    public List<Todo> findAll(User user, String keyword, Long categoryId, Sort sort) {
+    public List<Todo> findAll(User user, String keyword, Long categoryId, Sort sort, boolean isAdmin) {
         boolean hasKeyword = keyword != null && !keyword.isBlank();
         boolean hasCategory = categoryId != null;
+        if (isAdmin) {
+            if (hasKeyword && hasCategory) {
+                return todoRepository.findByTitleContainingIgnoreCaseAndCategoryId(keyword, categoryId, sort);
+            }
+            if (hasKeyword) {
+                return todoRepository.findByTitleContainingIgnoreCase(keyword, sort);
+            }
+            if (hasCategory) {
+                return todoRepository.findByCategoryId(categoryId, sort);
+            }
+            return todoRepository.findAll(sort);
+        }
         if (hasKeyword && hasCategory) {
             return todoRepository.findByUserAndTitleContainingIgnoreCaseAndCategoryId(user, keyword, categoryId, sort);
         }
@@ -61,9 +73,21 @@ public class TodoService {
         return todoRepository.findByUser(user, sort);
     }
 
-    public org.springframework.data.domain.Page<Todo> findPage(User user, String keyword, Long categoryId, org.springframework.data.domain.Pageable pageable) {
+    public org.springframework.data.domain.Page<Todo> findPage(User user, String keyword, Long categoryId, org.springframework.data.domain.Pageable pageable, boolean isAdmin) {
         boolean hasKeyword = keyword != null && !keyword.isBlank();
         boolean hasCategory = categoryId != null;
+        if (isAdmin) {
+            if (hasKeyword && hasCategory) {
+                return todoRepository.findByTitleContainingIgnoreCaseAndCategoryId(keyword, categoryId, pageable);
+            }
+            if (hasKeyword) {
+                return todoRepository.findByTitleContainingIgnoreCase(keyword, pageable);
+            }
+            if (hasCategory) {
+                return todoRepository.findByCategoryId(categoryId, pageable);
+            }
+            return todoRepository.findAll(pageable);
+        }
         if (hasKeyword && hasCategory) {
             return todoRepository.findByUserAndTitleContainingIgnoreCaseAndCategoryId(user, keyword, categoryId, pageable);
         }
@@ -112,22 +136,28 @@ public class TodoService {
     }
 
     public Todo findByIdForUser(Long id, User user) {
+        return findByIdWithAccess(id, user, false);
+    }
+
+    public Todo findByIdWithAccess(Long id, User user, boolean isAdmin) {
         Todo todo = findById(id);
-        if (todo.getUser() == null || !todo.getUser().getId().equals(user.getId())) {
-            throw new ResponseStatusException(FORBIDDEN, "他ユーザーのToDoにはアクセスできません");
+        if (!isAdmin) {
+            if (todo.getUser() == null || !todo.getUser().getId().equals(user.getId())) {
+                throw new ResponseStatusException(FORBIDDEN, "他ユーザーのToDoにはアクセスできません");
+            }
         }
         return todo;
     }
 
     @Transactional
-    public void delete(Long id, User user) {
-        Todo todo = findByIdForUser(id, user);
+    public void delete(Long id, User user, boolean isAdmin) {
+        Todo todo = findByIdWithAccess(id, user, isAdmin);
         todoRepository.deleteById(todo.getId());
     }
 
     @Transactional
-    public Todo update(Long id, String title, String description, com.example.todo.enums.Priority priority, Long categoryId, java.time.LocalDate dueDate, User user) {
-        Todo todo = findByIdForUser(id, user);
+    public Todo update(Long id, String title, String description, com.example.todo.enums.Priority priority, Long categoryId, java.time.LocalDate dueDate, User user, boolean isAdmin) {
+        Todo todo = findByIdWithAccess(id, user, isAdmin);
         todo.setTitle(title);
         todo.setDescription(description);
         todo.setPriority(priority);
@@ -137,9 +167,13 @@ public class TodoService {
     }
 
     @Transactional
-    public int deleteByIds(List<Long> ids, User user) {
+    public int deleteByIds(List<Long> ids, User user, boolean isAdmin) {
         if (ids == null || ids.isEmpty()) {
             return 0;
+        }
+        if (isAdmin) {
+            todoRepository.deleteByIdIn(ids);
+            return ids.size();
         }
         List<Long> ownIds = ids.stream()
                 .filter(id -> {
@@ -159,8 +193,8 @@ public class TodoService {
     }
 
     @Transactional
-    public Todo toggleCompleted(Long id, User user) {
-        Todo todo = findByIdForUser(id, user);
+    public Todo toggleCompleted(Long id, User user, boolean isAdmin) {
+        Todo todo = findByIdWithAccess(id, user, isAdmin);
         todo.setCompleted(!todo.getCompleted());
         return todoRepository.save(todo);
     }

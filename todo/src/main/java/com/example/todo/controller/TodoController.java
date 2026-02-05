@@ -24,6 +24,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * ToDoアプリのControllerクラス
@@ -62,8 +64,9 @@ public class TodoController {
                 org.springframework.data.domain.PageRequest.of(page, size, sortSpec);
 
         User user = todoService.loadUser(userDetails.getUsername());
+        boolean isAdmin = hasRole(userDetails, "ROLE_ADMIN");
         org.springframework.data.domain.Page<com.example.todo.entity.Todo> todoPage =
-                todoService.findPage(user, keyword, categoryId, pageable);
+                todoService.findPage(user, keyword, categoryId, pageable, isAdmin);
 
         model.addAttribute("todoPage", todoPage);
         model.addAttribute("todos", todoPage.getContent());
@@ -73,6 +76,7 @@ public class TodoController {
         model.addAttribute("order", sortOrder);
         model.addAttribute("size", size);
         model.addAttribute("categories", categoryService.findAll());
+        model.addAttribute("isAdmin", isAdmin);
         return "todo/list";
     }
 
@@ -150,7 +154,8 @@ public class TodoController {
                        @AuthenticationPrincipal UserDetails userDetails,
                        Model model) {
         User user = todoService.loadUser(userDetails.getUsername());
-        Todo todo = todoService.findByIdForUser(id, user);
+        boolean isAdmin = hasRole(userDetails, "ROLE_ADMIN");
+        Todo todo = todoService.findByIdWithAccess(id, user, isAdmin);
         model.addAttribute("todo", todo);
         return "todo/detail";
     }
@@ -163,7 +168,8 @@ public class TodoController {
                        @AuthenticationPrincipal UserDetails userDetails,
                        Model model) {
         User user = todoService.loadUser(userDetails.getUsername());
-        Todo todo = todoService.findByIdForUser(id, user);
+        boolean isAdmin = hasRole(userDetails, "ROLE_ADMIN");
+        Todo todo = todoService.findByIdWithAccess(id, user, isAdmin);
         TodoForm form = new TodoForm(
                 todo.getTitle(),
                 todo.getDescription(),
@@ -198,8 +204,9 @@ public class TodoController {
         }
 
         User user = todoService.loadUser(userDetails.getUsername());
+        boolean isAdmin = hasRole(userDetails, "ROLE_ADMIN");
         todoService.update(id, todoForm.getTitle(), todoForm.getDescription(), todoForm.getPriority(),
-                todoForm.getCategoryId(), todoForm.getDueDate(), user);
+                todoForm.getCategoryId(), todoForm.getDueDate(), user, isAdmin);
         redirectAttributes.addFlashAttribute("message", "更新が完了しました");
         redirectAttributes.addFlashAttribute("messageType", "success");
         return "redirect:/todos";
@@ -212,7 +219,8 @@ public class TodoController {
     public String toggleCompleted(@PathVariable Long id,
                                   @AuthenticationPrincipal UserDetails userDetails) {
         User user = todoService.loadUser(userDetails.getUsername());
-        todoService.toggleCompleted(id, user);
+        boolean isAdmin = hasRole(userDetails, "ROLE_ADMIN");
+        todoService.toggleCompleted(id, user, isAdmin);
         return "redirect:/todos";
     }
 
@@ -253,7 +261,8 @@ public class TodoController {
                          RedirectAttributes redirectAttributes) {
         try {
             User user = todoService.loadUser(userDetails.getUsername());
-            todoService.delete(id, user);
+            boolean isAdmin = hasRole(userDetails, "ROLE_ADMIN");
+            todoService.delete(id, user, isAdmin);
             redirectAttributes.addFlashAttribute("message", "ToDoを削除しました");
             redirectAttributes.addFlashAttribute("messageType", "success");
         } catch (IllegalArgumentException e) {
@@ -267,6 +276,7 @@ public class TodoController {
      * 一括削除
      */
     @PostMapping("/bulk-delete")
+    @PreAuthorize("hasRole('ADMIN')")
     public String bulkDelete(@RequestParam(required = false) List<Long> ids,
                              @AuthenticationPrincipal UserDetails userDetails,
                              RedirectAttributes redirectAttributes) {
@@ -276,7 +286,8 @@ public class TodoController {
             return "redirect:/todos";
         }
         User user = todoService.loadUser(userDetails.getUsername());
-        int count = todoService.deleteByIds(ids, user);
+        boolean isAdmin = hasRole(userDetails, "ROLE_ADMIN");
+        int count = todoService.deleteByIds(ids, user, isAdmin);
         redirectAttributes.addFlashAttribute("message", count + "件を削除しました");
         redirectAttributes.addFlashAttribute("messageType", "success");
         return "redirect:/todos";
@@ -300,7 +311,8 @@ public class TodoController {
         org.springframework.data.domain.Sort sortSpec = buildSort(sortKey, direction);
 
         User user = todoService.loadUser(userDetails.getUsername());
-        List<Todo> todos = todoService.findAll(user, keyword, categoryId, sortSpec);
+        boolean isAdmin = hasRole(userDetails, "ROLE_ADMIN");
+        List<Todo> todos = todoService.findAll(user, keyword, categoryId, sortSpec, isAdmin);
 
         String filename = URLEncoder.encode("todo_" +
                 java.time.LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv",
@@ -332,5 +344,14 @@ public class TodoController {
             ));
         }
         writer.flush();
+    }
+
+    private boolean hasRole(UserDetails userDetails, String role) {
+        for (GrantedAuthority authority : userDetails.getAuthorities()) {
+            if (authority.getAuthority().equals(role)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

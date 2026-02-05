@@ -25,6 +25,20 @@ public class DataInitializer {
                 user.setRole("USER");
                 userRepository.save(user);
             }
+            if (userRepository.findByUsername("user2").isEmpty()) {
+                User user = new User();
+                user.setUsername("user2");
+                user.setPassword(passwordEncoder.encode("password"));
+                user.setRole("USER");
+                userRepository.save(user);
+            }
+            if (userRepository.findByUsername("admin").isEmpty()) {
+                User user = new User();
+                user.setUsername("admin");
+                user.setPassword(passwordEncoder.encode("adminpass"));
+                user.setRole("ADMIN");
+                userRepository.save(user);
+            }
         };
     }
 }
