@@ -2,6 +2,7 @@ package com.example.todo.controller;
 
 import com.example.todo.dto.TodoForm;
 import com.example.todo.entity.Todo;
+import com.example.todo.service.CategoryService;
 import com.example.todo.service.TodoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class TodoController {
 
     private final TodoService todoService;
+    private final CategoryService categoryService;
 
     /**
      * 一覧画面を表示
@@ -32,6 +34,7 @@ public class TodoController {
      */
     @GetMapping
     public String list(@RequestParam(required = false) String keyword,
+                       @RequestParam(required = false) Long categoryId,
                        @RequestParam(required = false, defaultValue = "createdAt") String sort,
                        @RequestParam(required = false, defaultValue = "desc") String order,
                        @RequestParam(required = false, defaultValue = "0") int page,
@@ -49,14 +52,16 @@ public class TodoController {
                 org.springframework.data.domain.PageRequest.of(page, size, sortSpec);
 
         org.springframework.data.domain.Page<com.example.todo.entity.Todo> todoPage =
-                todoService.findPage(keyword, pageable);
+                todoService.findPage(keyword, categoryId, pageable);
 
         model.addAttribute("todoPage", todoPage);
         model.addAttribute("todos", todoPage.getContent());
         model.addAttribute("keyword", keyword);
+        model.addAttribute("categoryId", categoryId);
         model.addAttribute("sort", sortColumn);
         model.addAttribute("order", sortOrder);
         model.addAttribute("size", size);
+        model.addAttribute("categories", categoryService.findAll());
         return "todo/list";
     }
 
@@ -86,7 +91,8 @@ public class TodoController {
      */
     @GetMapping("/new")
     public String showCreateForm(Model model) {
-        model.addAttribute("todoForm", new TodoForm("", "", com.example.todo.enums.Priority.MEDIUM));
+        model.addAttribute("todoForm", new TodoForm("", "", com.example.todo.enums.Priority.MEDIUM, null));
+        model.addAttribute("categories", categoryService.findAll());
         return "todo/form";
     }
 
@@ -97,8 +103,10 @@ public class TodoController {
     @PostMapping("/confirm")
     public String confirm(@Valid TodoForm todoForm, BindingResult result, Model model) {
         if (result.hasErrors()) {
+            model.addAttribute("categories", categoryService.findAll());
             return "todo/form";
         }
+        model.addAttribute("category", categoryService.findById(todoForm.getCategoryId()));
         model.addAttribute("todoForm", todoForm);
         return "todo/confirm";
     }
@@ -120,9 +128,15 @@ public class TodoController {
     @GetMapping("/{id}/edit")
     public String edit(@PathVariable Long id, Model model) {
         Todo todo = todoService.findById(id);
-        TodoForm form = new TodoForm(todo.getTitle(), todo.getDescription(), todo.getPriority());
+        TodoForm form = new TodoForm(
+                todo.getTitle(),
+                todo.getDescription(),
+                todo.getPriority(),
+                todo.getCategory() != null ? todo.getCategory().getId() : null
+        );
         model.addAttribute("todoForm", form);
         model.addAttribute("todoId", todo.getId());
+        model.addAttribute("categories", categoryService.findAll());
         return "todo/edit";
     }
 
@@ -139,10 +153,11 @@ public class TodoController {
 
         if (result.hasErrors()) {
             model.addAttribute("todoId", id);
+            model.addAttribute("categories", categoryService.findAll());
             return "todo/edit";
         }
 
-        todoService.update(id, todoForm.getTitle(), todoForm.getDescription(), todoForm.getPriority());
+        todoService.update(id, todoForm.getTitle(), todoForm.getDescription(), todoForm.getPriority(), todoForm.getCategoryId());
         redirectAttributes.addFlashAttribute("message", "更新が完了しました");
         redirectAttributes.addFlashAttribute("messageType", "success");
         return "redirect:/todos";

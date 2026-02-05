@@ -10,6 +10,8 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Version;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -41,6 +43,10 @@ public class Todo {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
     private Priority priority = Priority.MEDIUM;
+
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private Category category;
 
     @Column(columnDefinition = "BOOLEAN DEFAULT FALSE")
     private Boolean completed = false;

@@ -21,6 +21,10 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
 
     Page<Todo> findByTitleContainingIgnoreCase(String keyword, Pageable pageable);
 
+    Page<Todo> findByCategoryId(Long categoryId, Pageable pageable);
+
+    Page<Todo> findByTitleContainingIgnoreCaseAndCategoryId(String keyword, Long categoryId, Pageable pageable);
+
     List<Todo> findByDueDateLessThanEqual(LocalDate date);
 
     List<Todo> findAllByOrderByPriorityDesc();

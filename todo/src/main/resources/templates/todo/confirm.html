@@ -21,6 +21,9 @@
 
                     <dt class="col-sm-3">優先度</dt>
                     <dd class="col-sm-9" th:text="${todoForm.priority.displayName}">中</dd>
+
+                    <dt class="col-sm-3">カテゴリ</dt>
+                    <dd class="col-sm-9" th:text="${category.name}">カテゴリ</dd>
                 </dl>
             </div>
         </div>
@@ -29,6 +32,7 @@
             <input type="hidden" th:field="*{title}">
             <input type="hidden" th:field="*{description}">
             <input type="hidden" th:field="*{priority}">
+            <input type="hidden" th:field="*{categoryId}">
 
             <div class="d-flex gap-2">
                 <button type="button" class="btn btn-secondary"

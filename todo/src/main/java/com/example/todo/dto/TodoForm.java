@@ -21,4 +21,7 @@ public class TodoForm {
 
     @NotNull(message = "優先度を選択してください")
     private Priority priority;
+
+    @NotNull(message = "カテゴリを選択してください")
+    private Long categoryId;
 }

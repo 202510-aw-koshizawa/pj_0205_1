@@ -17,6 +17,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 public class TodoService {
 
     private final TodoRepository todoRepository;
+    private final CategoryService categoryService;
 
     @Transactional
     public Todo create(TodoForm form) {
@@ -24,6 +25,7 @@ public class TodoService {
         todo.setTitle(form.getTitle());
         todo.setDescription(form.getDescription());
         todo.setPriority(form.getPriority());
+        todo.setCategory(categoryService.findById(form.getCategoryId()));
         return todoRepository.save(todo);
     }
 
@@ -38,9 +40,17 @@ public class TodoService {
         return todoRepository.findAll(sort);
     }
 
-    public org.springframework.data.domain.Page<Todo> findPage(String keyword, org.springframework.data.domain.Pageable pageable) {
-        if (keyword != null && !keyword.isBlank()) {
+    public org.springframework.data.domain.Page<Todo> findPage(String keyword, Long categoryId, org.springframework.data.domain.Pageable pageable) {
+        boolean hasKeyword = keyword != null && !keyword.isBlank();
+        boolean hasCategory = categoryId != null;
+        if (hasKeyword && hasCategory) {
+            return todoRepository.findByTitleContainingIgnoreCaseAndCategoryId(keyword, categoryId, pageable);
+        }
+        if (hasKeyword) {
             return todoRepository.findByTitleContainingIgnoreCase(keyword, pageable);
+        }
+        if (hasCategory) {
+            return todoRepository.findByCategoryId(categoryId, pageable);
         }
         return todoRepository.findAll(pageable);
     }
@@ -49,11 +59,15 @@ public class TodoService {
     public int createSamples(int count) {
         int created = 0;
         com.example.todo.enums.Priority[] values = com.example.todo.enums.Priority.values();
+        List<com.example.todo.entity.Category> categories = categoryService.findAll();
         for (int i = 1; i <= count; i++) {
             Todo todo = new Todo();
             todo.setTitle("サンプルToDo " + i);
             todo.setDescription("ページネーション確認用のサンプルデータ " + i);
             todo.setPriority(values[i % values.length]);
+            if (!categories.isEmpty()) {
+                todo.setCategory(categories.get(i % categories.size()));
+            }
             todoRepository.save(todo);
             created++;
         }
@@ -79,11 +93,12 @@ public class TodoService {
     }
 
     @Transactional
-    public Todo update(Long id, String title, String description, com.example.todo.enums.Priority priority) {
+    public Todo update(Long id, String title, String description, com.example.todo.enums.Priority priority, Long categoryId) {
         Todo todo = findById(id);
         todo.setTitle(title);
         todo.setDescription(description);
         todo.setPriority(priority);
+        todo.setCategory(categoryService.findById(categoryId));
         return todoRepository.save(todo);
     }
 

@@ -47,6 +47,13 @@
             <form th:action="@{/todos}" method="get" class="d-flex gap-2 align-items-center">
                 <input type="text" name="keyword" class="form-control"
                        th:value="${keyword}" placeholder="タイトルで検索...">
+                <select name="categoryId" class="form-select" style="max-width: 220px;">
+                    <option value="">カテゴリ</option>
+                    <option th:each="c : ${categories}"
+                            th:value="${c.id}"
+                            th:text="${c.name}"
+                            th:selected="${categoryId != null and categoryId == c.id}"></option>
+                </select>
                 <input type="hidden" name="sort" th:value="${sort}">
                 <input type="hidden" name="order" th:value="${order}">
                 <button type="submit" class="btn btn-primary">検索</button>
@@ -54,8 +61,8 @@
             </form>
         </div>
 
-        <p th:if="${keyword != null and keyword != ''}">
-            「<span th:text="${keyword}">keyword</span>」の検索結果：
+        <p th:if="${(keyword != null and keyword != '') or categoryId != null}">
+            検索結果：
             <span th:text="${todos.size()}">0</span>件
         </p>
 
@@ -66,7 +73,7 @@
                         <th>
                             <a class="sort-link"
                                th:classappend="${sort == 'title'} ? ' sort-active'"
-                               th:href="@{/todos(sort='title', order=${sort == 'title' and order == 'asc'} ? 'desc' : 'asc', keyword=${keyword}, page=${todoPage.number}, size=${todoPage.size})}">
+                               th:href="@{/todos(sort='title', order=${sort == 'title' and order == 'asc'} ? 'desc' : 'asc', keyword=${keyword}, categoryId=${categoryId}, page=${todoPage.number}, size=${todoPage.size})}">
                                 タイトル
                                 <span th:if="${sort == 'title'}" th:text="${order == 'asc'} ? '↑' : '↓'"></span>
                             </a>
@@ -74,7 +81,7 @@
                         <th>
                             <a class="sort-link"
                                th:classappend="${sort == 'createdAt'} ? ' sort-active'"
-                               th:href="@{/todos(sort='createdAt', order=${sort == 'createdAt' and order == 'asc'} ? 'desc' : 'asc', keyword=${keyword}, page=${todoPage.number}, size=${todoPage.size})}">
+                               th:href="@{/todos(sort='createdAt', order=${sort == 'createdAt' and order == 'asc'} ? 'desc' : 'asc', keyword=${keyword}, categoryId=${categoryId}, page=${todoPage.number}, size=${todoPage.size})}">
                                 作成日
                                 <span th:if="${sort == 'createdAt'}" th:text="${order == 'asc'} ? '↑' : '↓'"></span>
                             </a>
@@ -83,15 +90,16 @@
                         <th>
                             <a class="sort-link"
                                th:classappend="${sort == 'priority'} ? ' sort-active'"
-                               th:href="@{/todos(sort='priority', order=${sort == 'priority' and order == 'asc'} ? 'desc' : 'asc', keyword=${keyword}, page=${todoPage.number}, size=${todoPage.size})}">
+                               th:href="@{/todos(sort='priority', order=${sort == 'priority' and order == 'asc'} ? 'desc' : 'asc', keyword=${keyword}, categoryId=${categoryId}, page=${todoPage.number}, size=${todoPage.size})}">
                                 優先度
                                 <span th:if="${sort == 'priority'}" th:text="${order == 'asc'} ? '↑' : '↓'"></span>
                             </a>
                         </th>
+                        <th>カテゴリ</th>
                         <th>
                             <a class="sort-link"
                                th:classappend="${sort == 'completed'} ? ' sort-active'"
-                               th:href="@{/todos(sort='completed', order=${sort == 'completed' and order == 'asc'} ? 'desc' : 'asc', keyword=${keyword}, page=${todoPage.number}, size=${todoPage.size})}">
+                               th:href="@{/todos(sort='completed', order=${sort == 'completed' and order == 'asc'} ? 'desc' : 'asc', keyword=${keyword}, categoryId=${categoryId}, page=${todoPage.number}, size=${todoPage.size})}">
                                 状態
                                 <span th:if="${sort == 'completed'}" th:text="${order == 'asc'} ? '↑' : '↓'"></span>
                             </a>
@@ -111,6 +119,12 @@
                         <td>
                             <span th:class="${todo.priority.cssClass}"
                                   th:text="${todo.priority.displayName}">中</span>
+                        </td>
+                        <td>
+                            <span th:if="${todo.category != null}"
+                                  class="badge bg-light text-dark"
+                                  th:text="${todo.category.name}">カテゴリ</span>
+                            <span th:unless="${todo.category != null}" class="text-muted">なし</span>
                         </td>
                         <td>
                             <span th:if="${todo.completed}" class="badge bg-success">完了</span>
@@ -137,15 +151,13 @@
             </table>
         </div>
 
-        <div th:if="${#lists.isEmpty(todos) and keyword != null and keyword != ''}"
+        <div th:if="${#lists.isEmpty(todos) and ((keyword != null and keyword != '') or categoryId != null)}"
              class="text-center py-4 border rounded bg-light">
-            <p class="text-muted mb-2">
-                「<span th:text="${keyword}">keyword</span>」に一致するToDoはありません。
-            </p>
+            <p class="text-muted mb-2">条件に一致するToDoはありません。</p>
             <a th:href="@{/todos}" class="btn btn-outline-secondary">検索をクリア</a>
         </div>
 
-        <div th:unless="${!#lists.isEmpty(todos) or (keyword != null and keyword != '')}"
+        <div th:unless="${!#lists.isEmpty(todos) or (keyword != null and keyword != '') or categoryId != null}"
              class="text-center py-5">
             <div class="mb-4">
                 <span class="material-icons" style="font-size: 4rem; color: #9ca3af;">
@@ -163,7 +175,7 @@
             <ul class="pagination justify-content-center">
                 <li class="page-item" th:classappend="${!todoPage.hasPrevious()} ? ' disabled'">
                     <a class="page-link"
-                       th:href="@{/todos(page=${todoPage.number - 1}, size=${todoPage.size}, sort=${sort}, order=${order}, keyword=${keyword})}">
+                       th:href="@{/todos(page=${todoPage.number - 1}, size=${todoPage.size}, sort=${sort}, order=${order}, keyword=${keyword}, categoryId=${categoryId})}">
                         « 前へ
                     </a>
                 </li>
@@ -171,12 +183,12 @@
                     th:each="i : ${#numbers.sequence(0, todoPage.totalPages - 1)}"
                     th:classappend="${i == todoPage.number} ? ' active'">
                     <a class="page-link"
-                       th:href="@{/todos(page=${i}, size=${todoPage.size}, sort=${sort}, order=${order}, keyword=${keyword})}"
+                       th:href="@{/todos(page=${i}, size=${todoPage.size}, sort=${sort}, order=${order}, keyword=${keyword}, categoryId=${categoryId})}"
                        th:text="${i + 1}">1</a>
                 </li>
                 <li class="page-item" th:classappend="${!todoPage.hasNext()} ? ' disabled'">
                     <a class="page-link"
-                       th:href="@{/todos(page=${todoPage.number + 1}, size=${todoPage.size}, sort=${sort}, order=${order}, keyword=${keyword})}">
+                       th:href="@{/todos(page=${todoPage.number + 1}, size=${todoPage.size}, sort=${sort}, order=${order}, keyword=${keyword}, categoryId=${categoryId})}">
                         次へ »
                     </a>
                 </li>
