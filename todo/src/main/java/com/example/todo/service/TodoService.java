@@ -3,6 +3,8 @@ package com.example.todo.service;
 import com.example.todo.dto.TodoForm;
 import com.example.todo.entity.Todo;
 import com.example.todo.entity.User;
+import com.example.todo.exception.BusinessException;
+import com.example.todo.exception.TodoNotFoundException;
 import com.example.todo.repository.TodoRepository;
 import com.example.todo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +15,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.FORBIDDEN;
 
 @Service
 @RequiredArgsConstructor
@@ -147,7 +148,7 @@ public class TodoService {
 
     public Todo findById(Long id) {
         return todoRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "ToDoが見つかりません: " + id));
+                .orElseThrow(() -> new TodoNotFoundException(id));
     }
 
     public Todo findByIdForUser(Long id, User user) {
@@ -158,7 +159,7 @@ public class TodoService {
         Todo todo = findById(id);
         if (!isAdmin) {
             if (todo.getUser() == null || !todo.getUser().getId().equals(user.getId())) {
-                throw new ResponseStatusException(FORBIDDEN, "他ユーザーのToDoにはアクセスできません");
+                throw new BusinessException("E403", "他ユーザーのToDoにはアクセスできません");
             }
         }
         return todo;
@@ -230,6 +231,6 @@ public class TodoService {
 
     public User loadUser(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "ユーザーが見つかりません: " + username));
+                .orElseThrow(() -> new BusinessException("E401", "ユーザーが見つかりません: " + username));
     }
 }
