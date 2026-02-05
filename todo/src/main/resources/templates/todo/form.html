@@ -10,17 +10,35 @@
     <div class="container mt-4">
         <h1>ToDo新規作成</h1>
 
-        <form>
+        <form th:action="@{/todos/confirm}" method="post">
             <div class="mb-3">
-                <label class="form-label">タイトル</label>
-                <input type="text" class="form-control">
+                <label for="title" class="form-label">タイトル <span class="text-danger">*</span></label>
+                <input type="text" class="form-control"
+                       id="title" name="title" required>
             </div>
-            <button type="submit" class="btn btn-primary">作成</button>
-        </form>
 
-        <a th:href="@{/todos}" class="btn btn-secondary mt-3">
-            戻る
-        </a>
+            <div class="mb-3">
+                <label for="description" class="form-label">説明</label>
+                <textarea class="form-control" id="description"
+                          name="description" rows="3"></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="priority" class="form-label">優先度</label>
+                <select class="form-select" id="priority" name="priority">
+                    <option value="1">1（最高）</option>
+                    <option value="2">2（高）</option>
+                    <option value="3" selected>3（普通）</option>
+                    <option value="4">4（低）</option>
+                    <option value="5">5（最低）</option>
+                </select>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">確認</button>
+                <a th:href="@{/todos}" class="btn btn-secondary">戻る</a>
+            </div>
+        </form>
     </div>
 </body>
 </html>
