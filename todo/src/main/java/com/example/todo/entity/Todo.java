@@ -52,6 +52,10 @@ public class Todo {
     @JoinColumn(name = "category_id")
     private Category category;
 
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
     @Column(columnDefinition = "BOOLEAN DEFAULT FALSE")
     private Boolean completed = false;
 

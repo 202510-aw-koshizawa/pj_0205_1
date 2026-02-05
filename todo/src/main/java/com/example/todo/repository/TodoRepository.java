@@ -1,6 +1,7 @@
 package com.example.todo.repository;
 
 import com.example.todo.entity.Todo;
+import com.example.todo.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -30,6 +31,22 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
     List<Todo> findByTitleContainingIgnoreCaseAndCategoryId(String keyword, Long categoryId, org.springframework.data.domain.Sort sort);
 
     void deleteByIdIn(List<Long> ids);
+
+    Page<Todo> findByUser(User user, Pageable pageable);
+
+    Page<Todo> findByUserAndTitleContainingIgnoreCase(User user, String keyword, Pageable pageable);
+
+    Page<Todo> findByUserAndCategoryId(User user, Long categoryId, Pageable pageable);
+
+    Page<Todo> findByUserAndTitleContainingIgnoreCaseAndCategoryId(User user, String keyword, Long categoryId, Pageable pageable);
+
+    List<Todo> findByUser(User user, org.springframework.data.domain.Sort sort);
+
+    List<Todo> findByUserAndTitleContainingIgnoreCase(User user, String keyword, org.springframework.data.domain.Sort sort);
+
+    List<Todo> findByUserAndCategoryId(User user, Long categoryId, org.springframework.data.domain.Sort sort);
+
+    List<Todo> findByUserAndTitleContainingIgnoreCaseAndCategoryId(User user, String keyword, Long categoryId, org.springframework.data.domain.Sort sort);
 
     List<Todo> findByDueDateLessThanEqual(LocalDate date);
 

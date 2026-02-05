@@ -2,6 +2,7 @@ package com.example.todo.controller;
 
 import com.example.todo.dto.TodoForm;
 import com.example.todo.entity.Todo;
+import com.example.todo.entity.User;
 import com.example.todo.service.CategoryService;
 import com.example.todo.service.TodoService;
 import jakarta.validation.Valid;
@@ -21,6 +22,8 @@ import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 
 /**
  * ToDoアプリのControllerクラス
@@ -45,6 +48,7 @@ public class TodoController {
                        @RequestParam(required = false, defaultValue = "desc") String order,
                        @RequestParam(required = false, defaultValue = "0") int page,
                        @RequestParam(required = false, defaultValue = "10") int size,
+                       @AuthenticationPrincipal UserDetails userDetails,
                        Model model) {
         String sortKey = normalizeSort(sort);
         String sortOrder = normalizeOrder(order);
@@ -57,8 +61,9 @@ public class TodoController {
         org.springframework.data.domain.Pageable pageable =
                 org.springframework.data.domain.PageRequest.of(page, size, sortSpec);
 
+        User user = todoService.loadUser(userDetails.getUsername());
         org.springframework.data.domain.Page<com.example.todo.entity.Todo> todoPage =
-                todoService.findPage(keyword, categoryId, pageable);
+                todoService.findPage(user, keyword, categoryId, pageable);
 
         model.addAttribute("todoPage", todoPage);
         model.addAttribute("todos", todoPage.getContent());
@@ -71,55 +76,6 @@ public class TodoController {
         return "todo/list";
     }
 
-    /**
-     * CSVエクスポート
-     */
-    @GetMapping("/export")
-    public void exportCsv(@RequestParam(required = false) String keyword,
-                          @RequestParam(required = false) Long categoryId,
-                          @RequestParam(required = false, defaultValue = "createdAt") String sort,
-                          @RequestParam(required = false, defaultValue = "desc") String order,
-                          HttpServletResponse response) throws Exception {
-        String sortKey = normalizeSort(sort);
-        String sortOrder = normalizeOrder(order);
-        org.springframework.data.domain.Sort.Direction direction =
-                sortOrder.equals("asc") ? org.springframework.data.domain.Sort.Direction.ASC
-                        : org.springframework.data.domain.Sort.Direction.DESC;
-        org.springframework.data.domain.Sort sortSpec = buildSort(sortKey, direction);
-
-        List<Todo> todos = todoService.findAll(keyword, categoryId, sortSpec);
-
-        String filename = URLEncoder.encode("todo_" +
-                java.time.LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv",
-                StandardCharsets.UTF_8);
-        response.setContentType("text/csv; charset=UTF-8");
-        response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
-
-        PrintWriter writer = response.getWriter();
-        writer.print('\ufeff');
-        writer.println("ID,タイトル,説明,優先度,状態,カテゴリ,期限日,作成日");
-
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd");
-        for (Todo todo : todos) {
-            String due = todo.getDueDate() != null ? todo.getDueDate().format(dateFormatter) : "";
-            String created = todo.getCreatedAt() != null ? todo.getCreatedAt().format(dateFormatter) : "";
-            String priority = todo.getPriority() != null ? todo.getPriority().getDisplayName() : "";
-            String status = Boolean.TRUE.equals(todo.getCompleted()) ? "完了" : "未完了";
-            String category = todo.getCategory() != null ? todo.getCategory().getName() : "";
-
-            writer.println(String.format("%d,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"",
-                    todo.getId(),
-                    escapeCsv(todo.getTitle()),
-                    escapeCsv(todo.getDescription()),
-                    escapeCsv(priority),
-                    escapeCsv(status),
-                    escapeCsv(category),
-                    escapeCsv(due),
-                    escapeCsv(created)
-            ));
-        }
-        writer.flush();
-    }
 
     private String escapeCsv(String value) {
         if (value == null) return "";
@@ -158,9 +114,10 @@ public class TodoController {
      * GET /todos/new でアクセス
      */
     @GetMapping("/new")
-    public String showCreateForm(Model model) {
+    public String showCreateForm(@AuthenticationPrincipal UserDetails userDetails, Model model) {
         model.addAttribute("todoForm", new TodoForm("", "", com.example.todo.enums.Priority.MEDIUM, null, null));
         model.addAttribute("categories", categoryService.findAll());
+        model.addAttribute("username", userDetails.getUsername());
         return "todo/form";
     }
 
@@ -169,13 +126,17 @@ public class TodoController {
      * @RequestParam でフォームの各フィールドを個別に受け取る
      */
     @PostMapping("/confirm")
-    public String confirm(@Valid TodoForm todoForm, BindingResult result, Model model) {
+    public String confirm(@Valid TodoForm todoForm, BindingResult result,
+                          @AuthenticationPrincipal UserDetails userDetails,
+                          Model model) {
         if (result.hasErrors()) {
             model.addAttribute("categories", categoryService.findAll());
+            model.addAttribute("username", userDetails.getUsername());
             return "todo/form";
         }
         model.addAttribute("category", categoryService.findById(todoForm.getCategoryId()));
         model.addAttribute("todoForm", todoForm);
+        model.addAttribute("username", userDetails.getUsername());
         return "todo/confirm";
     }
 
@@ -185,8 +146,12 @@ public class TodoController {
      * @param id URLパスから取得するToDoのID
      */
     @GetMapping("/{id}")
-    public String show(@PathVariable Long id, Model model) {
-        // IDに対応するToDoを取得してModelに追加
+    public String show(@PathVariable Long id,
+                       @AuthenticationPrincipal UserDetails userDetails,
+                       Model model) {
+        User user = todoService.loadUser(userDetails.getUsername());
+        Todo todo = todoService.findByIdForUser(id, user);
+        model.addAttribute("todo", todo);
         return "todo/detail";
     }
 
@@ -194,8 +159,11 @@ public class TodoController {
      * 編集画面を表示
      */
     @GetMapping("/{id}/edit")
-    public String edit(@PathVariable Long id, Model model) {
-        Todo todo = todoService.findById(id);
+    public String edit(@PathVariable Long id,
+                       @AuthenticationPrincipal UserDetails userDetails,
+                       Model model) {
+        User user = todoService.loadUser(userDetails.getUsername());
+        Todo todo = todoService.findByIdForUser(id, user);
         TodoForm form = new TodoForm(
                 todo.getTitle(),
                 todo.getDescription(),
@@ -206,6 +174,7 @@ public class TodoController {
         model.addAttribute("todoForm", form);
         model.addAttribute("todoId", todo.getId());
         model.addAttribute("categories", categoryService.findAll());
+        model.addAttribute("username", userDetails.getUsername());
         return "todo/edit";
     }
 
@@ -218,16 +187,19 @@ public class TodoController {
             @Valid TodoForm todoForm,
             BindingResult result,
             Model model,
+            @AuthenticationPrincipal UserDetails userDetails,
             RedirectAttributes redirectAttributes) {
 
         if (result.hasErrors()) {
             model.addAttribute("todoId", id);
             model.addAttribute("categories", categoryService.findAll());
+            model.addAttribute("username", userDetails.getUsername());
             return "todo/edit";
         }
 
+        User user = todoService.loadUser(userDetails.getUsername());
         todoService.update(id, todoForm.getTitle(), todoForm.getDescription(), todoForm.getPriority(),
-                todoForm.getCategoryId(), todoForm.getDueDate());
+                todoForm.getCategoryId(), todoForm.getDueDate(), user);
         redirectAttributes.addFlashAttribute("message", "更新が完了しました");
         redirectAttributes.addFlashAttribute("messageType", "success");
         return "redirect:/todos";
@@ -237,8 +209,10 @@ public class TodoController {
      * 完了状態の切り替え
      */
     @PostMapping("/{id}/toggle")
-    public String toggleCompleted(@PathVariable Long id) {
-        todoService.toggleCompleted(id);
+    public String toggleCompleted(@PathVariable Long id,
+                                  @AuthenticationPrincipal UserDetails userDetails) {
+        User user = todoService.loadUser(userDetails.getUsername());
+        todoService.toggleCompleted(id, user);
         return "redirect:/todos";
     }
 
@@ -246,8 +220,11 @@ public class TodoController {
      * 登録処理を実行し完了画面へ
      */
     @PostMapping("/complete")
-    public String complete(TodoForm todoForm, RedirectAttributes redirectAttributes) {
-        todoService.create(todoForm);
+    public String complete(TodoForm todoForm,
+                           @AuthenticationPrincipal UserDetails userDetails,
+                           RedirectAttributes redirectAttributes) {
+        User user = todoService.loadUser(userDetails.getUsername());
+        todoService.create(todoForm, user);
 
         redirectAttributes.addFlashAttribute("message", "登録が完了しました");
 
@@ -258,8 +235,10 @@ public class TodoController {
      * サンプルデータを生成
      */
     @PostMapping("/sample")
-    public String createSamples(RedirectAttributes redirectAttributes) {
-        int created = todoService.createSamples(25);
+    public String createSamples(@AuthenticationPrincipal UserDetails userDetails,
+                                RedirectAttributes redirectAttributes) {
+        User user = todoService.loadUser(userDetails.getUsername());
+        int created = todoService.createSamples(25, user);
         redirectAttributes.addFlashAttribute("message", "サンプルを" + created + "件作成しました");
         redirectAttributes.addFlashAttribute("messageType", "success");
         return "redirect:/todos";
@@ -269,9 +248,12 @@ public class TodoController {
      * 削除処理
      */
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String delete(@PathVariable Long id,
+                         @AuthenticationPrincipal UserDetails userDetails,
+                         RedirectAttributes redirectAttributes) {
         try {
-            todoService.delete(id);
+            User user = todoService.loadUser(userDetails.getUsername());
+            todoService.delete(id, user);
             redirectAttributes.addFlashAttribute("message", "ToDoを削除しました");
             redirectAttributes.addFlashAttribute("messageType", "success");
         } catch (IllegalArgumentException e) {
@@ -286,15 +268,69 @@ public class TodoController {
      */
     @PostMapping("/bulk-delete")
     public String bulkDelete(@RequestParam(required = false) List<Long> ids,
+                             @AuthenticationPrincipal UserDetails userDetails,
                              RedirectAttributes redirectAttributes) {
         if (ids == null || ids.isEmpty()) {
             redirectAttributes.addFlashAttribute("message", "削除する項目を選択してください");
             redirectAttributes.addFlashAttribute("messageType", "danger");
             return "redirect:/todos";
         }
-        int count = todoService.deleteByIds(ids);
+        User user = todoService.loadUser(userDetails.getUsername());
+        int count = todoService.deleteByIds(ids, user);
         redirectAttributes.addFlashAttribute("message", count + "件を削除しました");
         redirectAttributes.addFlashAttribute("messageType", "success");
         return "redirect:/todos";
+    }
+
+    /**
+     * CSVエクスポート
+     */
+    @GetMapping("/export")
+    public void exportCsv(@RequestParam(required = false) String keyword,
+                          @RequestParam(required = false) Long categoryId,
+                          @RequestParam(required = false, defaultValue = "createdAt") String sort,
+                          @RequestParam(required = false, defaultValue = "desc") String order,
+                          @AuthenticationPrincipal UserDetails userDetails,
+                          HttpServletResponse response) throws Exception {
+        String sortKey = normalizeSort(sort);
+        String sortOrder = normalizeOrder(order);
+        org.springframework.data.domain.Sort.Direction direction =
+                sortOrder.equals("asc") ? org.springframework.data.domain.Sort.Direction.ASC
+                        : org.springframework.data.domain.Sort.Direction.DESC;
+        org.springframework.data.domain.Sort sortSpec = buildSort(sortKey, direction);
+
+        User user = todoService.loadUser(userDetails.getUsername());
+        List<Todo> todos = todoService.findAll(user, keyword, categoryId, sortSpec);
+
+        String filename = URLEncoder.encode("todo_" +
+                java.time.LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv",
+                StandardCharsets.UTF_8);
+        response.setContentType("text/csv; charset=UTF-8");
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+
+        PrintWriter writer = response.getWriter();
+        writer.print('\ufeff');
+        writer.println("ID,タイトル,説明,優先度,状態,カテゴリ,期限日,作成日");
+
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+        for (Todo todo : todos) {
+            String due = todo.getDueDate() != null ? todo.getDueDate().format(dateFormatter) : "";
+            String created = todo.getCreatedAt() != null ? todo.getCreatedAt().format(dateFormatter) : "";
+            String priority = todo.getPriority() != null ? todo.getPriority().getDisplayName() : "";
+            String status = Boolean.TRUE.equals(todo.getCompleted()) ? "完了" : "未完了";
+            String category = todo.getCategory() != null ? todo.getCategory().getName() : "";
+
+            writer.println(String.format("%d,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"",
+                    todo.getId(),
+                    escapeCsv(todo.getTitle()),
+                    escapeCsv(todo.getDescription()),
+                    escapeCsv(priority),
+                    escapeCsv(status),
+                    escapeCsv(category),
+                    escapeCsv(due),
+                    escapeCsv(created)
+            ));
+        }
+        writer.flush();
     }
 }
