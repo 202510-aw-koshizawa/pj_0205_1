@@ -41,8 +41,9 @@
                 </thead>
                 <tbody>
                     <tr th:each="todo : ${todos}">
-                        <td th:text="${todo.title}">タイトル</td>
-                        <td th:text="${#temporals.format(todo.dueDate, 'yyyy/MM/dd')}"
+                        <td th:classappend="${todo.completed} ? 'text-decoration-line-through text-muted'"
+                            th:text="${todo.title}">タイトル</td>
+                        <td th:text="${todo.dueDate != null ? #temporals.format(todo.dueDate, 'yyyy/MM/dd') : '-'}"
                             th:classappend="${todo.dueDate != null && todo.dueDate.isBefore(#temporals.createToday())} ? 'text-danger'">
                             2024/01/01
                         </td>
@@ -54,6 +55,13 @@
                             <span th:unless="${todo.completed}" class="badge bg-secondary">未完了</span>
                         </td>
                         <td class="d-flex gap-2">
+                            <form th:action="@{/todos/{id}/toggle(id=${todo.id})}" method="post" class="d-inline">
+                                <button type="submit"
+                                        th:class="${todo.completed} ? 'btn btn-sm btn-outline-secondary' : 'btn btn-sm btn-success'">
+                                    <span th:if="${todo.completed}">未完了に戻す</span>
+                                    <span th:unless="${todo.completed}">完了にする</span>
+                                </button>
+                            </form>
                             <a th:href="@{/todos/{id}(id=${todo.id})}" class="btn btn-sm btn-info">詳細</a>
                             <a th:href="@{/todos/{id}/edit(id=${todo.id})}" class="btn btn-sm btn-warning">編集</a>
                             <form th:action="@{/todos/{id}/delete(id=${todo.id})}"

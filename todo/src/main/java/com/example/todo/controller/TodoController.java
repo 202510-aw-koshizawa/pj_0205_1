@@ -1,6 +1,7 @@
 package com.example.todo.controller;
 
 import com.example.todo.dto.TodoForm;
+import com.example.todo.entity.Todo;
 import com.example.todo.service.TodoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -71,6 +72,52 @@ public class TodoController {
     public String show(@PathVariable Long id, Model model) {
         // IDに対応するToDoを取得してModelに追加
         return "todo/detail";
+    }
+
+    /**
+     * 編集画面を表示
+     */
+    @GetMapping("/{id}/edit")
+    public String edit(@PathVariable Long id, Model model) {
+        model.addAttribute("todo", todoService.findById(id));
+        return "todo/edit";
+    }
+
+    /**
+     * 更新処理
+     */
+    @PostMapping("/{id}/update")
+    public String update(
+            @PathVariable Long id,
+            @RequestParam("title") String title,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "priority", defaultValue = "3") Integer priority,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
+        if (title == null || title.isBlank()) {
+            model.addAttribute("error", "タイトルは必須です");
+            Todo todo = todoService.findById(id);
+            todo.setTitle(title);
+            todo.setDescription(description);
+            todo.setPriority(priority);
+            model.addAttribute("todo", todo);
+            return "todo/edit";
+        }
+
+        todoService.update(id, title, description, priority);
+        redirectAttributes.addFlashAttribute("message", "更新が完了しました");
+        redirectAttributes.addFlashAttribute("messageType", "success");
+        return "redirect:/todos";
+    }
+
+    /**
+     * 完了状態の切り替え
+     */
+    @PostMapping("/{id}/toggle")
+    public String toggleCompleted(@PathVariable Long id) {
+        todoService.toggleCompleted(id);
+        return "redirect:/todos";
     }
 
     /**
