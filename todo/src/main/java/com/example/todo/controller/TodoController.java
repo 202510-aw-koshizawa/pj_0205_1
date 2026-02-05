@@ -1,5 +1,8 @@
 package com.example.todo.controller;
 
+import com.example.todo.dto.TodoForm;
+import com.example.todo.service.TodoService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -7,14 +10,18 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * ToDoアプリのControllerクラス
  * 画面遷移を管理するエンドポイントを定義
  */
 @Controller
+@RequiredArgsConstructor
 @RequestMapping("/todos")
 public class TodoController {
+
+    private final TodoService todoService;
 
     /**
      * 一覧画面を表示
@@ -74,14 +81,13 @@ public class TodoController {
             @RequestParam("title") String title,
             @RequestParam(value = "description", required = false) String description,
             @RequestParam(value = "priority", defaultValue = "3") Integer priority,
-            Model model) {
+            RedirectAttributes redirectAttributes) {
 
-        // TODO: ここでデータベースに保存する処理を実装
-        // todoService.save(title, description, priority);
+        TodoForm form = new TodoForm(title, description, priority);
+        todoService.create(form);
 
-        // 完了画面にタイトルを渡す
-        model.addAttribute("title", title);
+        redirectAttributes.addFlashAttribute("message", "登録が完了しました");
 
-        return "todo/complete";
+        return "redirect:/todos";
     }
 }

@@ -16,6 +16,9 @@
     <div class="container mt-4">
         <h1>ToDo一覧</h1>
 
+        <div th:if="${message}" class="alert alert-success" role="alert"
+             th:text="${message}">登録が完了しました</div>
+
         <a th:href="@{/todos/new}" class="btn btn-success mb-3">
             新規作成
         </a>
