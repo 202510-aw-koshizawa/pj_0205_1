@@ -40,18 +40,16 @@ public class TodoController {
                        @RequestParam(required = false, defaultValue = "0") int page,
                        @RequestParam(required = false, defaultValue = "10") int size,
                        Model model) {
-        String sortColumn = normalizeSort(sort);
+        String sortKey = normalizeSort(sort);
         String sortOrder = normalizeOrder(order);
 
         org.springframework.data.domain.Sort.Direction direction =
                 sortOrder.equals("asc") ? org.springframework.data.domain.Sort.Direction.ASC
                         : org.springframework.data.domain.Sort.Direction.DESC;
 
-        org.springframework.data.domain.Sort sortSpec;
-        if ("priority".equals(sortColumn)) {
-            sortColumn = "priorityRank";
-        }
-        sortSpec = org.springframework.data.domain.Sort.by(direction, sortColumn);
+        String sortColumn = "priority".equals(sortKey) ? "priorityRank" : sortKey;
+        org.springframework.data.domain.Sort sortSpec =
+                org.springframework.data.domain.Sort.by(direction, sortColumn);
         org.springframework.data.domain.Pageable pageable =
                 org.springframework.data.domain.PageRequest.of(page, size, sortSpec);
 
@@ -62,7 +60,7 @@ public class TodoController {
         model.addAttribute("todos", todoPage.getContent());
         model.addAttribute("keyword", keyword);
         model.addAttribute("categoryId", categoryId);
-        model.addAttribute("sort", sortColumn);
+        model.addAttribute("sort", sortKey);
         model.addAttribute("order", sortOrder);
         model.addAttribute("size", size);
         model.addAttribute("categories", categoryService.findAll());
