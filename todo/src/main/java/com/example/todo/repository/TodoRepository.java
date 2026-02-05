@@ -25,6 +25,8 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
 
     Page<Todo> findByTitleContainingIgnoreCaseAndCategoryId(String keyword, Long categoryId, Pageable pageable);
 
+    void deleteByIdIn(List<Long> ids);
+
     List<Todo> findByDueDateLessThanEqual(LocalDate date);
 
     List<Todo> findAllByOrderByPriorityDesc();

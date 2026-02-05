@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import java.util.List;
 
 /**
  * ToDoアプリのControllerクラス
@@ -213,6 +214,23 @@ public class TodoController {
             redirectAttributes.addFlashAttribute("message", "削除に失敗しました");
             redirectAttributes.addFlashAttribute("messageType", "danger");
         }
+        return "redirect:/todos";
+    }
+
+    /**
+     * 一括削除
+     */
+    @PostMapping("/bulk-delete")
+    public String bulkDelete(@RequestParam(required = false) List<Long> ids,
+                             RedirectAttributes redirectAttributes) {
+        if (ids == null || ids.isEmpty()) {
+            redirectAttributes.addFlashAttribute("message", "削除する項目を選択してください");
+            redirectAttributes.addFlashAttribute("messageType", "danger");
+            return "redirect:/todos";
+        }
+        int count = todoService.deleteByIds(ids);
+        redirectAttributes.addFlashAttribute("message", count + "件を削除しました");
+        redirectAttributes.addFlashAttribute("messageType", "success");
         return "redirect:/todos";
     }
 }

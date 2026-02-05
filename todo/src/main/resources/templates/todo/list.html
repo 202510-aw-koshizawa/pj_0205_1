@@ -44,6 +44,13 @@
                     サンプル生成
                 </button>
             </form>
+            <form id="bulkDeleteForm" th:action="@{/todos/bulk-delete}" method="post" class="ms-auto">
+                <button type="submit" class="btn btn-danger"
+                        onclick="return confirm('選択した項目を削除しますか？');"
+                        id="bulkDeleteBtn" disabled>
+                    選択した項目を削除
+                </button>
+            </form>
         </div>
 
         <div class="p-3 mb-3 border rounded bg-light">
@@ -73,6 +80,9 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
+                        <th>
+                            <input type="checkbox" id="selectAll">
+                        </th>
                         <th>
                             <a class="sort-link"
                                th:classappend="${sort == 'title'} ? ' sort-active'"
@@ -119,6 +129,11 @@
                 </thead>
                 <tbody>
                     <tr th:each="todo : ${todos}">
+                        <td>
+                            <input type="checkbox" class="item-checkbox"
+                                   name="ids" th:value="${todo.id}"
+                                   form="bulkDeleteForm">
+                        </td>
                         <td th:classappend="${todo.completed} ? 'text-decoration-line-through text-muted'"
                             th:text="${todo.title}">タイトル</td>
                         <td th:text="${#temporals.format(todo.createdAt, 'yyyy/MM/dd')}">2024/01/01</td>
@@ -232,6 +247,44 @@
                 setTimeout(() => alert.remove(), 150);
             }
         }, 3000);
+    </script>
+    <script>
+        function updateBulkDeleteState() {
+            const checkboxes = document.querySelectorAll('.item-checkbox');
+            const checked = Array.from(checkboxes).some(cb => cb.checked);
+            const btn = document.getElementById('bulkDeleteBtn');
+            if (btn) btn.disabled = !checked;
+        }
+
+        function toggleAll(source) {
+            const checkboxes = document.querySelectorAll('.item-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = source.checked;
+            });
+            updateBulkDeleteState();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.item-checkbox');
+            if (selectAll) {
+                selectAll.addEventListener('change', function() {
+                    toggleAll(this);
+                });
+            }
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', function() {
+                    const allChecked = Array.from(checkboxes).every(c => c.checked);
+                    const someChecked = Array.from(checkboxes).some(c => c.checked);
+                    if (selectAll) {
+                        selectAll.checked = allChecked;
+                        selectAll.indeterminate = someChecked && !allChecked;
+                    }
+                    updateBulkDeleteState();
+                });
+            });
+            updateBulkDeleteState();
+        });
     </script>
 
     <footer class="bg-light text-center py-3 mt-5">

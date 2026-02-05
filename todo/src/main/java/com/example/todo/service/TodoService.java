@@ -110,6 +110,15 @@ public class TodoService {
     }
 
     @Transactional
+    public int deleteByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return 0;
+        }
+        todoRepository.deleteByIdIn(ids);
+        return ids.size();
+    }
+
+    @Transactional
     public Todo toggleCompleted(Long id) {
         Todo todo = findById(id);
         todo.setCompleted(!todo.getCompleted());
