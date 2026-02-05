@@ -73,6 +73,7 @@ public class TodoController {
             case "createdAt":
             case "completed":
             case "priority":
+            case "dueDate":
                 return sort;
             default:
                 return "createdAt";
@@ -91,7 +92,7 @@ public class TodoController {
      */
     @GetMapping("/new")
     public String showCreateForm(Model model) {
-        model.addAttribute("todoForm", new TodoForm("", "", com.example.todo.enums.Priority.MEDIUM, null));
+        model.addAttribute("todoForm", new TodoForm("", "", com.example.todo.enums.Priority.MEDIUM, null, null));
         model.addAttribute("categories", categoryService.findAll());
         return "todo/form";
     }
@@ -132,7 +133,8 @@ public class TodoController {
                 todo.getTitle(),
                 todo.getDescription(),
                 todo.getPriority(),
-                todo.getCategory() != null ? todo.getCategory().getId() : null
+                todo.getCategory() != null ? todo.getCategory().getId() : null,
+                todo.getDueDate()
         );
         model.addAttribute("todoForm", form);
         model.addAttribute("todoId", todo.getId());
@@ -157,7 +159,8 @@ public class TodoController {
             return "todo/edit";
         }
 
-        todoService.update(id, todoForm.getTitle(), todoForm.getDescription(), todoForm.getPriority(), todoForm.getCategoryId());
+        todoService.update(id, todoForm.getTitle(), todoForm.getDescription(), todoForm.getPriority(),
+                todoForm.getCategoryId(), todoForm.getDueDate());
         redirectAttributes.addFlashAttribute("message", "更新が完了しました");
         redirectAttributes.addFlashAttribute("messageType", "success");
         return "redirect:/todos";

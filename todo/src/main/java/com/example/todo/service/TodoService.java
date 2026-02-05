@@ -25,6 +25,7 @@ public class TodoService {
         todo.setTitle(form.getTitle());
         todo.setDescription(form.getDescription());
         todo.setPriority(form.getPriority());
+        todo.setDueDate(form.getDueDate());
         todo.setCategory(categoryService.findById(form.getCategoryId()));
         return todoRepository.save(todo);
     }
@@ -93,11 +94,12 @@ public class TodoService {
     }
 
     @Transactional
-    public Todo update(Long id, String title, String description, com.example.todo.enums.Priority priority, Long categoryId) {
+    public Todo update(Long id, String title, String description, com.example.todo.enums.Priority priority, Long categoryId, java.time.LocalDate dueDate) {
         Todo todo = findById(id);
         todo.setTitle(title);
         todo.setDescription(description);
         todo.setPriority(priority);
+        todo.setDueDate(dueDate);
         todo.setCategory(categoryService.findById(categoryId));
         return todoRepository.save(todo);
     }

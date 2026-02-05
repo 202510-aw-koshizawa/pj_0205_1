@@ -19,6 +19,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import com.example.todo.enums.Priority;
 
 @Entity
@@ -66,5 +67,20 @@ public class Todo {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    public boolean isExpired() {
+        return dueDate != null && dueDate.isBefore(LocalDate.now());
+    }
+
+    public boolean isDeadlineSoon() {
+        if (dueDate == null) return false;
+        long days = ChronoUnit.DAYS.between(LocalDate.now(), dueDate);
+        return days >= 0 && days <= 3;
+    }
+
+    public long getDaysUntilDeadline() {
+        if (dueDate == null) return Long.MAX_VALUE;
+        return ChronoUnit.DAYS.between(LocalDate.now(), dueDate);
     }
 }
