@@ -50,6 +50,8 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
 
     List<Todo> findByDueDateLessThanEqual(LocalDate date);
 
+    List<Todo> findByDueDateAndCompletedFalse(LocalDate date);
+
     List<Todo> findAllByOrderByPriorityDesc();
 
     long countByUser(User user);

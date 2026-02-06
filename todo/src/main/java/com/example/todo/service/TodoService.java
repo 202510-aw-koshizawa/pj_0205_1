@@ -24,7 +24,7 @@ public class TodoService {
     private final CategoryService categoryService;
     private final UserRepository userRepository;
     private final AuditService auditService;
-    private final NotificationService notificationService;
+    private final MailService mailService;
 
     @Transactional(rollbackFor = Exception.class)
     public Todo create(TodoForm form, User user) {
@@ -37,7 +37,7 @@ public class TodoService {
         todo.setUser(user);
         Todo saved = todoRepository.save(todo);
         auditService.log("CREATE", saved.getId(), user.getUsername());
-        notificationService.sendTodoCreatedEmailAsync(user.getUsername(), saved.getTitle());
+        mailService.sendTodoCreatedAsync(user, saved);
         return saved;
     }
 
@@ -55,7 +55,7 @@ public class TodoService {
         }
         Todo saved = todoRepository.save(todo);
         auditService.log("CREATE", saved.getId(), user.getUsername());
-        notificationService.sendTodoCreatedEmailAsync(user.getUsername(), saved.getTitle());
+        mailService.sendTodoCreatedAsync(user, saved);
         return saved;
     }
 
