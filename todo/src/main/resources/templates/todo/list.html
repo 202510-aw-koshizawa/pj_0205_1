@@ -41,6 +41,10 @@
                 <a th:href="@{''(lang='en')}">English</a>
             </div>
         </div>
+        <div class="mb-2" sec:authorize="hasRole('ADMIN')">
+            <a th:href="@{/admin/audit-logs}" class="btn btn-sm btn-outline-secondary"
+               th:text="#{admin.audit.link}">Audit Logs</a>
+        </div>
 
         <div th:if="${message}"
              th:classappend="'alert alert-' + ${messageType ?: 'info'}"

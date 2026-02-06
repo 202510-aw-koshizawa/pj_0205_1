@@ -7,6 +7,8 @@ import com.example.todo.exception.BusinessException;
 import com.example.todo.exception.TodoNotFoundException;
 import com.example.todo.repository.TodoRepository;
 import com.example.todo.repository.UserRepository;
+import com.example.todo.audit.Auditable;
+import com.example.todo.audit.AuditAction;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -27,6 +29,7 @@ public class TodoService {
     private final MailService mailService;
 
     @Transactional(rollbackFor = Exception.class)
+    @Auditable(action = AuditAction.CREATE)
     public Todo create(TodoForm form, User user) {
         Todo todo = new Todo();
         todo.setTitle(form.getTitle());
@@ -36,12 +39,12 @@ public class TodoService {
         todo.setCategory(categoryService.findById(form.getCategoryId()));
         todo.setUser(user);
         Todo saved = todoRepository.save(todo);
-        auditService.log("CREATE", saved.getId(), user.getUsername());
         mailService.sendTodoCreatedAsync(user, saved);
         return saved;
     }
 
     @Transactional(rollbackFor = Exception.class)
+    @Auditable(action = AuditAction.CREATE)
     public Todo createFromApi(com.example.todo.dto.ApiTodoRequest req, User user) {
         Todo todo = new Todo();
         todo.setTitle(req.getTitle());
@@ -54,7 +57,6 @@ public class TodoService {
             todo.setCompleted(req.getCompleted());
         }
         Todo saved = todoRepository.save(todo);
-        auditService.log("CREATE", saved.getId(), user.getUsername());
         mailService.sendTodoCreatedAsync(user, saved);
         return saved;
     }
@@ -183,13 +185,14 @@ public class TodoService {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    @Auditable(action = AuditAction.DELETE)
     public void delete(Long id, User user, boolean isAdmin) {
         Todo todo = findByIdWithAccess(id, user, isAdmin);
         todoRepository.deleteById(todo.getId());
-        auditService.log("DELETE", todo.getId(), user.getUsername());
     }
 
     @Transactional(rollbackFor = Exception.class)
+    @Auditable(action = AuditAction.UPDATE)
     public Todo update(Long id, String title, String description, com.example.todo.enums.Priority priority, Long categoryId, java.time.LocalDate dueDate, User user, boolean isAdmin) {
         Todo todo = findByIdWithAccess(id, user, isAdmin);
         todo.setTitle(title);
@@ -198,11 +201,11 @@ public class TodoService {
         todo.setDueDate(dueDate);
         todo.setCategory(categoryService.findById(categoryId));
         Todo saved = todoRepository.save(todo);
-        auditService.log("UPDATE", saved.getId(), user.getUsername());
         return saved;
     }
 
     @Transactional(rollbackFor = Exception.class)
+    @Auditable(action = AuditAction.UPDATE)
     public Todo updateFromApi(Long id, com.example.todo.dto.ApiTodoRequest req, User user, boolean isAdmin) {
         Todo todo = findByIdWithAccess(id, user, isAdmin);
         todo.setTitle(req.getTitle());
@@ -214,7 +217,6 @@ public class TodoService {
             todo.setCompleted(req.getCompleted());
         }
         Todo saved = todoRepository.save(todo);
-        auditService.log("UPDATE", saved.getId(), user.getUsername());
         return saved;
     }
 
@@ -247,11 +249,11 @@ public class TodoService {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    @Auditable(action = AuditAction.TOGGLE)
     public Todo toggleCompleted(Long id, User user, boolean isAdmin) {
         Todo todo = findByIdWithAccess(id, user, isAdmin);
         todo.setCompleted(!todo.getCompleted());
         Todo saved = todoRepository.save(todo);
-        auditService.log("TOGGLE", saved.getId(), user.getUsername());
         return saved;
     }
 
