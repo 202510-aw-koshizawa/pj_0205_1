@@ -2,32 +2,42 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title th:text="#{todo.confirm.title}">入力内容の確認</title>
+    <title th:text="#{todo.confirm.title}">Confirm</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
           rel="stylesheet">
 </head>
 <body>
     <div class="container mt-4">
-        <h1 th:text="#{todo.confirm.title}">入力内容の確認</h1>
+        <h1 th:text="#{todo.confirm.title}">Confirm</h1>
 
         <div class="card mb-4">
             <div class="card-body">
                 <dl class="row">
-                    <dt class="col-sm-3" th:text="#{label.title}">タイトル</dt>
-                    <dd class="col-sm-9" th:text="${todoForm.title}">サンプル</dd>
+                    <dt class="col-sm-3" th:text="#{label.title}">Title</dt>
+                    <dd class="col-sm-9" th:text="${todoForm.title}">Title</dd>
 
-                    <dt class="col-sm-3" th:text="#{label.description}">説明</dt>
-                    <dd class="col-sm-9" th:text="${todoForm.description} ?: #{label.none}">説明文</dd>
+                    <dt class="col-sm-3" th:text="#{label.description}">Description</dt>
+                    <dd class="col-sm-9">
+                        <span th:if="${todoForm.description != null and !#strings.isEmpty(todoForm.description)}"
+                              th:text="${todoForm.description}">Description</span>
+                        <span th:unless="${todoForm.description != null and !#strings.isEmpty(todoForm.description)}"
+                              th:text="#{label.none}">None</span>
+                    </dd>
 
-                    <dt class="col-sm-3" th:text="#{label.priority}">優先度</dt>
-                    <dd class="col-sm-9" th:text="#{${'priority.' + #strings.toLowerCase(todoForm.priority.name())}}">中</dd>
-
-                    <dt class="col-sm-3" th:text="#{label.category}">カテゴリ</dt>
-                    <dd class="col-sm-9" th:text="${category.name}">カテゴリ</dd>
-
-                    <dt class="col-sm-3" th:text="#{label.deadline}">期限日</dt>
+                    <dt class="col-sm-3" th:text="#{label.priority}">Priority</dt>
                     <dd class="col-sm-9"
-                        th:text="${todoForm.dueDate != null ? #temporals.format(todoForm.dueDate, 'yyyy/MM/dd') : #{label.none}}">なし</dd>
+                        th:text="#{${'priority.' + #strings.toLowerCase(todoForm.priority.name())}}">Medium</dd>
+
+                    <dt class="col-sm-3" th:text="#{label.category}">Category</dt>
+                    <dd class="col-sm-9" th:text="${category.name}">Category</dd>
+
+                    <dt class="col-sm-3" th:text="#{label.deadline}">Deadline</dt>
+                    <dd class="col-sm-9">
+                        <span th:if="${todoForm.dueDate != null}"
+                              th:text="${#temporals.format(todoForm.dueDate, 'yyyy/MM/dd')}">2026/01/01</span>
+                        <span th:unless="${todoForm.dueDate != null}"
+                              th:text="#{label.none}">None</span>
+                    </dd>
                 </dl>
             </div>
         </div>
@@ -42,8 +52,8 @@
 
             <div class="d-flex gap-2">
                 <button type="button" class="btn btn-secondary"
-                        onclick="history.back()" th:text="#{button.back}">戻る</button>
-                <button type="submit" class="btn btn-success" th:text="#{button.save}">登録</button>
+                        onclick="history.back()" th:text="#{button.back}">Back</button>
+                <button type="submit" class="btn btn-success" th:text="#{button.save}">Save</button>
             </div>
         </form>
     </div>
