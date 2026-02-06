@@ -52,6 +52,12 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
 
     List<Todo> findAllByOrderByPriorityDesc();
 
+    long countByUser(User user);
+
+    long countByUserAndCompletedTrue(User user);
+
+    long countByUserAndDueDateBetween(User user, LocalDate start, LocalDate end);
+
     @Query("SELECT t FROM Todo t WHERE t.completed = false ORDER BY t.dueDate ASC")
     List<Todo> findUncompletedOrderByDueDate();
 }
